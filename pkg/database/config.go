@@ -1,4 +1,4 @@
-package config
+package database
 
 import (
 	"fmt"
@@ -21,15 +21,13 @@ type DatabaseConfig struct {
 // DefaultDatabaseConfig 返回默认的单实例配置
 func DefaultDatabaseConfig() DatabaseConfig {
 	return DatabaseConfig{
-		// Driver:          "mysql",
-		// DSN:             "root:@tcp(127.0.0.1:3306)/test?charset=utf8mb4&parseTime=True&loc=Local",
 		Driver:          "sqlite3",
 		DSN:             "./test.db",
 		MaxOpenConns:    100,
 		MaxIdleConns:    10,
 		ConnMaxLifetime: 30 * 60 * 1000, // 30分钟
 		ConnMaxIdleTime: 5 * 60 * 1000,  // 5分钟
-		LogLevel:        "warn",
+		LogLevel:        "info",
 		SlowThreshold:   1000, // 1秒
 	}
 }

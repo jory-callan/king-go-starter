@@ -1,4 +1,4 @@
-package config
+package http
 
 import (
 	"fmt"
@@ -74,7 +74,7 @@ func DefaultHttpConfig() HttpConfig {
 		IdleTimeout:     60000,
 		MaxHeaderBytes:  1048576,
 		MaxBodyBytes:    104857600,
-		EnableDebug:     false,
+		EnableDebug:     true,
 	}
 }
 

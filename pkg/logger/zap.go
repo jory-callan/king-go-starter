@@ -1,29 +1,25 @@
 package logger
 
 import (
+	"context"
+	"errors"
 	"fmt"
-	"king-starter/config"
-	"os"
-	"sync"
-
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"gopkg.in/natefinch/lumberjack.v2"
+	"os"
+	"syscall"
 )
 
 // Logger 封装 zap.Logger，提供统一日志接口
 type Logger struct {
 	*zap.Logger
-	once sync.Once
 }
 
 // New 创建 Logger 实例，使用提供的配置
-func New(cfg *config.LoggerConfig) *Logger {
+func New(cfg *LoggerConfig) *Logger {
 	// 解析日志级别
 	level := zapcore.InfoLevel
-	if err := level.UnmarshalText([]byte(cfg.Level)); err != nil {
-		panic(fmt.Sprintf("invalid log level: %v", err))
-	}
 
 	// 创建 encoder
 	encoderConfig := zapcore.EncoderConfig{
@@ -78,14 +74,41 @@ func New(cfg *config.LoggerConfig) *Logger {
 	}
 }
 
-// NewWithDefaultConfig 使用默认配置创建 Logger 实例
-func NewWithDefaultConfig() *Logger {
-	cfg := config.DefaultLoggerConfig()
-	return New(&cfg)
+// HealthCheck 健康检查
+func (l *Logger) HealthCheck(ctx context.Context) error {
+	return nil
+}
+
+// Close 关闭 logger
+
+// Close 关闭 logger（安全忽略 stdout/stderr 的 sync 错误）
+func (l *Logger) Close() {
+	err := l.Logger.Sync()
+	if err != nil {
+		// 忽略 stdout/stderr 的 sync 错误
+		if isStdoutStderrSyncError(err) {
+			return // 视为成功
+		}
+		l.Logger.Error("close logger failed", zap.Error(err))
+		return
+	}
+	return
+}
+
+// isStdoutStderrSyncError 判断是否为 stdout/stderr 的 sync 错误
+func isStdoutStderrSyncError(err error) bool {
+	// 检查是否为 syscall.ENOTTY（inappropriate ioctl for device）
+	var errno syscall.Errno
+	if errors.As(err, &errno) {
+		return errors.Is(errno, syscall.ENOTTY)
+	}
+	// 兼容其他系统可能的错误信息（如 macOS）
+	return err.Error() == "sync /dev/stdout: inappropriate ioctl for device" ||
+		err.Error() == "sync /dev/stderr: inappropriate ioctl for device"
 }
 
 // With 添加自定义字段到 logger
-func (l *Logger) With(fields ...zap.Field) *Logger {
+func (l *Logger) With(fields ...Field) *Logger {
 	return &Logger{
 		Logger: l.Logger.With(fields...),
 	}
@@ -96,4 +119,27 @@ func (l *Logger) Named(name string) *Logger {
 	return &Logger{
 		Logger: l.Logger.Named(name),
 	}
+}
+
+// 封装常用方法给第三方使用
+
+func (l *Logger) Debug(msg string, fields ...Field) {
+	l.Logger.Debug(msg, fields...)
+}
+func (l *Logger) Info(msg string, fields ...Field) {
+	l.Logger.Info(msg, fields...)
+}
+func (l *Logger) Warn(msg string, fields ...Field) {
+	l.Logger.Warn(msg, fields...)
+}
+func (l *Logger) Error(msg string, fields ...Field) {
+	l.Logger.Error(msg, fields...)
+}
+func (l *Logger) Any(msg string, args ...any) {
+	l.Logger.Info(msg, Any("args", args))
+}
+
+func (l *Logger) Infof(template string, args ...any) {
+	msg := fmt.Sprintf(template, args...)
+	l.Logger.Info(msg)
 }

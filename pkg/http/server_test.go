@@ -4,7 +4,7 @@ package http
 // 	"net/http"
 // 	"king-starter/config"
 // 	"king-starter/pkg/app"
-// 	"king-starter/pkg/logger"
+// 	"king-starter/pkg/log"
 // 	"testing"
 // 	"time"
 
@@ -13,7 +13,7 @@ package http
 
 // func TestServer(t *testing.T) {
 // 	// 初始化logger
-// 	logger := logger.NewWithConfig(&logger.Config{
+// 	log := log.NewWithConfig(&log.Config{
 // 		Level: "debug",
 // 	})
 
@@ -26,7 +26,7 @@ package http
 // 	core := app.NewWithConfig(&config.DefaultConfig())
 
 // 	// 创建服务器
-// 	server := NewWithConfig(&cfg, logger, core)
+// 	server := NewWithConfig(&cfg, log, core)
 
 // 	// 注册路由（直接使用Echo原生方法）
 // 	server.echo.GET("/", func(c echo.Context) error {

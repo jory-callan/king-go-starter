@@ -1,4 +1,4 @@
-package config
+package logger
 
 import "fmt"
 
@@ -19,26 +19,26 @@ func (c *LoggerConfig) Validate() error {
 	switch c.Level {
 	case "debug", "info", "warn", "error", "fatal":
 	default:
-		return fmt.Errorf("[config] logger config invalid log level: %s", c.Level)
+		return fmt.Errorf("[logger] config invalid log level: %s", c.Level)
 	}
 
 	// 验证日志格式
 	switch c.Format {
 	case "json", "text":
 	default:
-		return fmt.Errorf("[config] logger config invalid log format: %s", c.Format)
+		return fmt.Errorf("[logger] config invalid log format: %s", c.Format)
 	}
 
 	// 验证输出目标
 	switch c.Output {
 	case "stdout", "file":
 	default:
-		return fmt.Errorf("[config] logger config invalid log output: %s", c.Output)
+		return fmt.Errorf("[logger] config invalid log output: %s", c.Output)
 	}
 
 	// 如果输出目标是 file 则必须配置日志文件路径
 	if c.Output == "file" && c.FilePath == "" {
-		return fmt.Errorf("[config] logger config file path is required for file output")
+		return fmt.Errorf("[logger] config file path is required for file output")
 	}
 
 	return nil

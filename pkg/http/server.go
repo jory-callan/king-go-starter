@@ -2,8 +2,7 @@ package http
 
 import (
 	"context"
-	"fmt"
-	"king-starter/config"
+	"golang.org/x/time/rate"
 	"king-starter/pkg/http/middleware"
 	"king-starter/pkg/logger"
 	"net/http"
@@ -14,38 +13,37 @@ import (
 
 	"github.com/labstack/echo/v4"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
-	"go.uber.org/zap"
 )
 
 // Server HTTP服务器封装（精简版）
 type Server struct {
-	logger *logger.Logger
-	config *config.HttpConfig
+	log    *logger.Logger
 	echo   *echo.Echo
-	server *http.Server
+	config *HttpConfig
 }
 
 // New 创建Echo服务器
-func New(cfg *config.HttpConfig, logger *logger.Logger) *Server {
-
+func New(cfg *HttpConfig, log *logger.Logger) *Server {
 	// 创建Echo实例
 	e := echo.New()
+	// 隐藏Banner
 	e.HideBanner = true
+	e.HidePort = true
+	e.Debug = cfg.EnableDebug
+	// 直接使用 echo 内置 Server（无需手动创建 http.Server）
+	e.Server.ReadTimeout = time.Duration(cfg.ReadTimeout) * time.Millisecond
+	e.Server.WriteTimeout = time.Duration(cfg.WriteTimeout) * time.Millisecond
+	e.Server.MaxHeaderBytes = cfg.MaxHeaderBytes
 
-	// 创建HTTP服务器
-	srv := &http.Server{
-		Addr:           cfg.Addr(),
-		ReadTimeout:    time.Duration(cfg.ReadTimeout) * time.Millisecond,
-		WriteTimeout:   time.Duration(cfg.WriteTimeout) * time.Millisecond,
-		MaxHeaderBytes: 1 << 22,
-		Handler:        e,
-	}
+	e.GET("/ping", func(c echo.Context) error {
+		return c.String(http.StatusOK, "pong")
+	})
 
+	// 创建服务器实例
 	server := &Server{
-		echo:   e,
-		server: srv,
+		log:    log.With(logger.String("component", "http")),
+		echo:   e, // Echo实例
 		config: cfg,
-		logger: logger.With(zap.String("component", "http")),
 	}
 
 	// 注册中间件
@@ -54,23 +52,22 @@ func New(cfg *config.HttpConfig, logger *logger.Logger) *Server {
 	// 注册健康检查
 	e.GET("/health", server.healthCheck)
 
-	server.logger.Info("http server created",
-		zap.String("addr", cfg.Addr()),
-		zap.Duration("read_timeout", time.Duration(cfg.ReadTimeout)*time.Millisecond),
+	server.log.Info("http server created",
+		logger.String("addr", cfg.Addr()),
+		logger.Duration("read_timeout", time.Duration(cfg.ReadTimeout)*time.Millisecond),
 	)
 
 	return server
 }
 
-// 为了方便外部访问 echo 实例（用于注册路由）
-func (s *Server) Echo() *echo.Echo {
+// Engine 为了方便外部访问 echo 实例（用于注册路由）
+func (s *Server) Engine() *echo.Echo {
 	return s.echo
 }
 
-// 直接允许操作 s.echo
-// 这样在外部 router 里，你就像拿到了钥匙，可以直接进门布置
-func (s *Server) SetupRoutes(setupFunc func(e *echo.Echo)) {
-	setupFunc(s.echo)
+// RegisterRoutes 注册路由（符合 Go 惯例）
+func (s *Server) RegisterRoutes(registerFunc func(e *echo.Echo)) {
+	registerFunc(s.echo)
 }
 
 // registerMiddleware 注册中间件
@@ -82,12 +79,13 @@ func (s *Server) registerMiddleware() {
 	s.echo.Use(echoMiddleware.RequestID())
 	// s.echo.Use(echoMiddleware.Logger())
 	s.echo.Use(echoMiddleware.CORS())
+	s.echo.Use(echoMiddleware.RateLimiter(echoMiddleware.NewRateLimiterMemoryStore(rate.Limit(20))))
 
 	// 自定义的中间件
 	// 请求日志中间件（使用我们的logger）
-	s.echo.Use(middleware.EchoLogger(s.logger))
+	s.echo.Use(middleware.EchoLogger(s.log))
 	// 错误处理中间件
-	s.echo.HTTPErrorHandler = middleware.EchoErrorHandler(s.logger)
+	s.echo.HTTPErrorHandler = middleware.EchoErrorHandler(s.log)
 
 }
 
@@ -100,54 +98,38 @@ func (s *Server) healthCheck(c echo.Context) error {
 	})
 }
 
-// Start 启动服务器
-func (s *Server) Start() {
-	go func() {
-		s.logger.Info("http server starting", zap.String("addr", s.server.Addr))
-		if err := s.server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			s.logger.Error("http server failed", zap.Error(err))
-			panic(fmt.Sprintf("http server failed: %v", err))
-		}
-		s.logger.Info("http server started", zap.String("addr", s.server.Addr))
-	}()
+func (s *Server) Start() error {
+	// 启动信号监听（非阻塞）
+	s.startSignalHandler()
+	// 打印启动信息
+	s.log.Info("⇨ http server started on " + s.config.Addr())
+	// 阻塞直到服务关闭
+	return s.echo.Start(s.config.Addr())
 }
 
-// StartTLS 启动HTTPS
-func (s *Server) StartTLS(certFile, keyFile string) {
-	go func() {
-		s.logger.Info("https server starting", zap.String("addr", s.server.Addr))
-
-		if err := s.server.ListenAndServeTLS(certFile, keyFile); err != nil && err != http.ErrServerClosed {
-			s.logger.Error("https server failed", zap.Error(err))
-			panic(fmt.Sprintf("https server failed: %v", err))
-		}
-	}()
-}
-
-// Shutdown 优雅关闭
-func (s *Server) Shutdown() error {
-	s.logger.Info("http server shutting down")
-
-	if s.server == nil {
-		return fmt.Errorf("http server not started")
-	}
-	// ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(s.config.ShutdownTimeout)*time.Millisecond)
-
-	defer cancel()
-
-	return s.server.Shutdown(ctx)
-}
-
-// WaitForSignal 等待信号优雅关闭
-func (s *Server) WaitForSignal() {
+func (s *Server) startSignalHandler() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	sig := <-quit
-	s.logger.Info("received signal", zap.String("signal", sig.String()))
+	go func() {
+		sig := <-quit
+		s.log.Info("received signal", logger.String("signal", sig.String()))
+		s.Shutdown()
+	}()
+}
 
-	if err := s.Shutdown(); err != nil {
-		s.logger.Error("shutdown failed", zap.Error(err))
+func (s *Server) Shutdown() {
+	s.log.Info("http server shutting down")
+	if s.echo.Server == nil {
+		s.log.Error("http server not started")
+		return
 	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(s.config.ShutdownTimeout)*time.Millisecond)
+	defer cancel()
+	err := s.echo.Shutdown(ctx)
+	if err != nil {
+		s.log.Error("http server echo shutdown error", logger.Error(err))
+		return
+	}
+	s.log.Info("http server stopped")
 }

@@ -16,7 +16,7 @@ var (
 	once         sync.Once
 )
 
-// MustLoad 加载配置，失败则panic
+// LoadWithFile 加载配置，失败则panic
 func LoadWithFile(configPath string) *Config {
 	once.Do(func() {
 		globalConfig = load(configPath)

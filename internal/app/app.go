@@ -3,15 +3,17 @@ package app
 import (
 	"king-starter/config"
 	"king-starter/pkg/database"
+	"king-starter/pkg/jwt"
 	"king-starter/pkg/logger"
 )
 
 // Core 应用核心，持有所有共享依赖
 type Core struct {
 	// 基础设施
-	Logger *logger.Logger
+	Log    *logger.Logger
 	Config *config.Config
-	DB     *database.DB
+	Db     *database.DB
+	Jwt    *jwt.JWT
 }
 
 // 1. 定义一个包级私有变量，用来持有全局唯一的 Core 实例
@@ -22,15 +24,22 @@ var core *Core
 func New(cfg *config.Config) *Core {
 	log := logger.New(cfg.Logger)
 	log.Info("logger initialized")
-	db := database.NewInstanceManager(cfg.Database, log)
-	defaultDB := db.Get("default")
 
+	databaseConfig := cfg.Database["default"]
+	defaultDB, _ := database.New(databaseConfig, log)
+	log.Info("database default initialized")
+
+	jwtConfig := cfg.Jwt
+	jwtIns := jwt.NewWithConfig(jwtConfig)
+	log.Info("jwt initialized")
 	// 2. 实例化并赋值给全局变量
 	core = &Core{
-		Logger: log,
+		Log:    log.With(logger.String("component", "core")),
 		Config: cfg,
-		DB:     defaultDB,
+		Db:     defaultDB,
+		Jwt:    jwtIns,
 	}
+	log.Info("core initialized")
 
 	return core
 }
@@ -43,9 +52,9 @@ func (c *Core) Shutdown() {
 	// 关闭Redis连接
 	// c.Redis.Close()
 	// 关闭数据库连接
-	c.DB.Close()
+	c.Db.Close()
 	// 关闭日志
-	c.Logger.Sync()
+	c.Log.Close()
 }
 
 func mustCore() *Core {
@@ -56,9 +65,8 @@ func mustCore() *Core {
 }
 
 // 提供全局访问方法
-func DB() *database.DB       { return mustCore().DB }
-func Logger() *logger.Logger { return mustCore().Logger }
-func Config() *config.Config { return mustCore().Config }
 
-// func Redis() *redis.Client   { return mustCore().Redis }
-// func JWT() *jwt.JWT          { return mustCore().JWT }
+func DB() *database.DB       { return mustCore().Db }
+func Logger() *logger.Logger { return mustCore().Log }
+func Config() *config.Config { return mustCore().Config }
+func JWT() *jwt.JWT          { return mustCore().Jwt }

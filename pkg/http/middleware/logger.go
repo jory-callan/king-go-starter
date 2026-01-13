@@ -8,6 +8,7 @@ import (
 	"go.uber.org/zap"
 )
 
+// EchoLogger 日志中间件
 func EchoLogger(log *logger.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {

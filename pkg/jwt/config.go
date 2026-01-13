@@ -1,4 +1,4 @@
-package config
+package jwt
 
 import (
 	"fmt"
@@ -7,9 +7,9 @@ import (
 
 // JwtConfig 简化配置
 type JwtConfig struct {
-	Secret  string `yaml:"secret"`  // 必填
-	Expires int    `yaml:"expires"` // 过期时间（秒）
-	Issuer  string `yaml:"issuer"`  // 签发者
+	Secret string `yaml:"secret"` // 必填
+	Expire int    `yaml:"expire"` // 过期时间（秒）
+	Issuer string `yaml:"issuer"` // 签发者
 }
 
 // Validate 简单验证
@@ -22,9 +22,9 @@ func (c *JwtConfig) Validate() error {
 
 func DefaultJwtConfig() JwtConfig {
 	return JwtConfig{
-		Secret:  "your-32-char-secret-key-here",
-		Expires: int(time.Hour * 24), // 默认24小时
-		Issuer:  "sre-server",
+		Secret: "your-32-char-secret-key-here",
+		Expire: int(time.Hour * 24), // 默认24小时
+		Issuer: "sre-server",
 	}
 }
 

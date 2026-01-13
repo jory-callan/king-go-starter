@@ -8,7 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// echoErrorHandler 统一错误处理
+// EchoErrorHandler 统一错误处理
 func EchoErrorHandler(log *logger.Logger) echo.HTTPErrorHandler {
 	return func(err error, c echo.Context) {
 		if c.Response().Committed {
