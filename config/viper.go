@@ -16,21 +16,9 @@ var (
 	once         sync.Once
 )
 
-// LoadWithFile 加载配置，失败则panic
-func LoadWithFile(configPath string) *Config {
-	once.Do(func() {
-		globalConfig = load(configPath)
-		if globalConfig == nil {
-			panic("[config] load config failed")
-		}
-		log.Printf("[config] load config success: %s", globalConfig.Summary())
-	})
-	return globalConfig
-}
-
 func Load() *Config {
 	once.Do(func() {
-		globalConfig = load("")
+		globalConfig = LoadWithConfigFile("")
 		if globalConfig == nil {
 			panic("[config] load config failed")
 		}
@@ -39,8 +27,8 @@ func Load() *Config {
 	return globalConfig
 }
 
-// load 实际的配置加载逻辑
-func load(configPath string) *Config {
+// LoadWithConfigFile 实际的配置加载逻辑
+func LoadWithConfigFile(configPath string) *Config {
 	v := setupViper(configPath)
 
 	// 尝试读取配置
@@ -82,7 +70,7 @@ func setupViper(configPath string) *viper.Viper {
 		// 自动搜索
 		v.SetConfigName("config")
 		v.SetConfigType("yaml")
-		v.AddConfigPath(".")
+		v.AddConfigPath(".") //
 		v.AddConfigPath("./config")
 		v.AddConfigPath(filepath.Join(os.Getenv("HOME"), "config"))
 	}

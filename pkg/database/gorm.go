@@ -6,11 +6,11 @@ import (
 	"king-starter/pkg/logger"
 	"time"
 
-	"go.uber.org/zap"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	glog "gorm.io/gorm/logger"
 )
 
 // DB 封装 gorm.DB，提供统一数据库接口
@@ -26,7 +26,7 @@ func New(cfg *DatabaseConfig, log *logger.Logger) (*DB, error) {
 	switch cfg.Driver {
 	case "mysql":
 		dialector = mysql.Open(cfg.DSN)
-	case "postgresql", "postgres":
+	case "postgresql", "postgres", "pg", "pgsql":
 		dialector = postgres.Open(cfg.DSN)
 	case "sqlite3", "sqlite":
 		dialector = sqlite.Open(cfg.DSN)
@@ -35,15 +35,20 @@ func New(cfg *DatabaseConfig, log *logger.Logger) (*DB, error) {
 		return nil, fmt.Errorf("[database] instance invalid driver: %s (supported: mysql, postgresql, postgres, pg, pgsql, sqlite3, sqlite)", cfg.Driver)
 	}
 
-	// 创建GORM配置
+	//创建GORM配置
 	gormConfig := &gorm.Config{
-		Logger:                 newGormLogger(log, cfg.LogLevel, time.Duration(cfg.SlowThreshold)*time.Millisecond),
+		Logger: newGormLogger(log, cfg.LogLevel, 20*time.Millisecond),
+		//Logger:                 glog.Default,
 		SkipDefaultTransaction: true,
 		PrepareStmt:            true, // 预编译语句，提高性能
 	}
 
+	_ = glog.Default
 	// 创建Gorm实例, 连接数据库
 	db, err := gorm.Open(dialector, gormConfig)
+	//db, err := gorm.Open(dialector, &gorm.Config{
+	//	Logger: glog.Default.LogMode(glog.Info), // 显示详细的 SQL 语句
+	//})
 	if err != nil {
 		log.Error(fmt.Sprintf("[database] failed to open database: %v", err))
 		return nil, err
@@ -67,10 +72,8 @@ func New(cfg *DatabaseConfig, log *logger.Logger) (*DB, error) {
 	}
 
 	return &DB{
-		DB: db,
-		log: log.With(
-			zap.String("component", "database"),
-		),
+		DB:  db,
+		log: log.Named("database"),
 	}, nil
 }
 
@@ -79,15 +82,15 @@ func (d *DB) HealthCheck(ctx context.Context) error {
 	start := time.Now()
 	sqlDB, err := d.DB.DB()
 	if err != nil {
-		d.log.Error("get sql db failed", zap.Error(err))
+		d.log.Error("get sql db failed", logger.Error(err))
 		return err
 	}
 	if err := sqlDB.PingContext(ctx); err != nil {
-		d.log.Error("database ping failed", zap.Error(err))
+		d.log.Error("[database] ping failed", logger.Error(err))
 		return err
 	}
-	d.log.Debug("database ping ok",
-		zap.Duration("cost", time.Since(start)),
+	d.log.Debug("[database] ping ok",
+		logger.Duration("cost", time.Since(start)),
 	)
 	return nil
 }
@@ -100,12 +103,12 @@ func (d *DB) Close() {
 	var err error
 	sqlDB, err := d.DB.DB()
 	if err != nil {
-		d.log.Error("get sql db failed")
+		d.log.Error("[database] get sql db failed")
 	}
 	err = sqlDB.Close()
 	if err != nil {
-		d.log.Error("database close failed")
+		d.log.Error("[database] close failed")
 	}
-	d.log.Info("database closed")
+	d.log.Info("[database] closed")
 	return
 }

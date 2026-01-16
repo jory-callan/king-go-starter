@@ -16,23 +16,25 @@ type CustomClaims struct {
 type JWT struct {
 	secret []byte
 	issuer string
-	expire time.Duration
+	expire int
 }
 
 // New 创建 JWT 实例
-func New(secret []byte, issuer string, expire time.Duration) *JWT {
+func New(secret []byte, issuer string, expire int) *JWT {
 	return &JWT{
 		secret: secret,
 		issuer: issuer,
 		expire: expire,
 	}
 }
-func NewWithConfig(cfg *JwtConfig) *JWT {
+
+// NewWithConfig 使用配置文件进行创建 JWT 实例
+func NewWithConfig(cfg *JwtConfig) (*JWT, error) {
 	secret := []byte(cfg.Secret)
 	issuer := cfg.Issuer
-	expire := time.Duration(cfg.Expire) * time.Second
+	expire := cfg.Expire
 
-	return New(secret, issuer, expire)
+	return New(secret, issuer, expire), cfg.Validate()
 }
 
 // GenerateToken 生成 JWT 令牌
@@ -44,7 +46,7 @@ func (j *JWT) GenerateToken(userID, username, roles string) (string, error) {
 		Roles:    roles,
 		RegisteredClaims: jwt.RegisteredClaims{
 			Issuer:    j.issuer,
-			ExpiresAt: jwt.NewNumericDate(now.Add(j.expire)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(j.expire))),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 		},
@@ -80,7 +82,7 @@ func (j *JWT) RefreshToken(tokenString string) (string, error) {
 		return "", err
 	}
 	// 更新过期时间
-	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(j.expire))
+	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Duration(j.expire)))
 	// 生成新令牌
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	// 签名并返回新令牌

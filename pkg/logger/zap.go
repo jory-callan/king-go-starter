@@ -9,6 +9,7 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"syscall"
+	"time"
 )
 
 // Logger 封装 zap.Logger，提供统一日志接口
@@ -17,23 +18,26 @@ type Logger struct {
 }
 
 // New 创建 Logger 实例，使用提供的配置
-func New(cfg *LoggerConfig) *Logger {
+func New(cfg *LoggerConfig) (*Logger, error) {
 	// 解析日志级别
 	level := zapcore.InfoLevel
 
 	// 创建 encoder
 	encoderConfig := zapcore.EncoderConfig{
-		TimeKey:        "time",
-		LevelKey:       "level",
-		NameKey:        "logger",
-		CallerKey:      "caller",
-		MessageKey:     "msg",
-		StacktraceKey:  "stacktrace",
-		LineEnding:     zapcore.DefaultLineEnding,
-		EncodeLevel:    zapcore.LowercaseLevelEncoder,
-		EncodeTime:     zapcore.ISO8601TimeEncoder,
-		EncodeDuration: zapcore.SecondsDurationEncoder,
-		EncodeCaller:   zapcore.ShortCallerEncoder,
+		TimeKey:       "time",
+		LevelKey:      "level",
+		NameKey:       "logger",
+		CallerKey:     "caller",
+		MessageKey:    "msg",
+		StacktraceKey: "stacktrace",
+		LineEnding:    zapcore.DefaultLineEnding,
+		EncodeLevel:   zapcore.CapitalColorLevelEncoder, // 颜色高亮：INFO, DEBUG
+		//EncodeTime:     zapcore.ISO8601TimeEncoder,
+		EncodeTime: func(t time.Time, enc zapcore.PrimitiveArrayEncoder) {
+			enc.AppendString(t.Format("2006-01-02 15:04:05")) // 人类可读时间
+		},
+		EncodeDuration: zapcore.StringDurationEncoder,
+		EncodeCaller:   zapcore.ShortCallerEncoder, // 只显示 main.go:12
 	}
 
 	var encoder zapcore.Encoder
@@ -70,16 +74,14 @@ func New(cfg *LoggerConfig) *Logger {
 	)
 
 	return &Logger{
-		Logger: zapLogger.Named("logger"),
-	}
+		Logger: zapLogger.Named("log"),
+	}, nil
 }
 
 // HealthCheck 健康检查
 func (l *Logger) HealthCheck(ctx context.Context) error {
 	return nil
 }
-
-// Close 关闭 logger
 
 // Close 关闭 logger（安全忽略 stdout/stderr 的 sync 错误）
 func (l *Logger) Close() {
@@ -114,7 +116,6 @@ func (l *Logger) With(fields ...Field) *Logger {
 	}
 }
 
-// Named 添加 logger 名称前缀
 func (l *Logger) Named(name string) *Logger {
 	return &Logger{
 		Logger: l.Logger.Named(name),
@@ -127,6 +128,7 @@ func (l *Logger) Debug(msg string, fields ...Field) {
 	l.Logger.Debug(msg, fields...)
 }
 func (l *Logger) Info(msg string, fields ...Field) {
+	//按照时间
 	l.Logger.Info(msg, fields...)
 }
 func (l *Logger) Warn(msg string, fields ...Field) {
@@ -139,7 +141,23 @@ func (l *Logger) Any(msg string, args ...any) {
 	l.Logger.Info(msg, Any("args", args))
 }
 
+func (l *Logger) Debugf(template string, args ...any) {
+	msg := fmt.Sprintf(template, args...)
+	l.Logger.Debug(msg)
+}
 func (l *Logger) Infof(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
 	l.Logger.Info(msg)
+}
+func (l *Logger) Warnf(template string, args ...any) {
+	msg := fmt.Sprintf(template, args...)
+	l.Logger.Warn(msg)
+}
+func (l *Logger) Errorf(template string, args ...any) {
+	msg := fmt.Sprintf(template, args...)
+	l.Logger.Error(msg)
+}
+func (l *Logger) Anyf(template string, args ...any) {
+	msg := fmt.Sprintf(template, args...)
+	l.Logger.Info(msg, Any("args", args))
 }

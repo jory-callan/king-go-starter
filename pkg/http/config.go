@@ -58,11 +58,6 @@ func (c *HttpConfig) Validate() error {
 	return nil
 }
 
-// Addr 获取监听地址
-func (c *HttpConfig) Addr() string {
-	return fmt.Sprintf("%s:%d", c.Host, c.Port)
-}
-
 // DefaultHttpConfig 默认配置
 func DefaultHttpConfig() HttpConfig {
 	return HttpConfig{

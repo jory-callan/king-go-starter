@@ -2,6 +2,7 @@ package http
 
 import (
 	"context"
+	"fmt"
 	"golang.org/x/time/rate"
 	"king-starter/pkg/http/middleware"
 	"king-starter/pkg/logger"
@@ -23,7 +24,7 @@ type Server struct {
 }
 
 // New 创建Echo服务器
-func New(cfg *HttpConfig, log *logger.Logger) *Server {
+func New(cfg *HttpConfig, log *logger.Logger) (*Server, error) {
 	// 创建Echo实例
 	e := echo.New()
 	// 隐藏Banner
@@ -41,7 +42,7 @@ func New(cfg *HttpConfig, log *logger.Logger) *Server {
 
 	// 创建服务器实例
 	server := &Server{
-		log:    log.With(logger.String("component", "http")),
+		log:    log.Named("http-server"),
 		echo:   e, // Echo实例
 		config: cfg,
 	}
@@ -52,12 +53,7 @@ func New(cfg *HttpConfig, log *logger.Logger) *Server {
 	// 注册健康检查
 	e.GET("/health", server.healthCheck)
 
-	server.log.Info("http server created",
-		logger.String("addr", cfg.Addr()),
-		logger.Duration("read_timeout", time.Duration(cfg.ReadTimeout)*time.Millisecond),
-	)
-
-	return server
+	return server, nil
 }
 
 // Engine 为了方便外部访问 echo 实例（用于注册路由）
@@ -99,12 +95,13 @@ func (s *Server) healthCheck(c echo.Context) error {
 }
 
 func (s *Server) Start() error {
+	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
 	// 启动信号监听（非阻塞）
 	s.startSignalHandler()
 	// 打印启动信息
-	s.log.Info("⇨ http server started on " + s.config.Addr())
+	s.log.Infof("⇨ http server started on %s", addr)
 	// 阻塞直到服务关闭
-	return s.echo.Start(s.config.Addr())
+	return s.echo.Start(addr)
 }
 
 func (s *Server) startSignalHandler() {

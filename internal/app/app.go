@@ -3,49 +3,72 @@ package app
 import (
 	"king-starter/config"
 	"king-starter/pkg/database"
+	"king-starter/pkg/http"
 	"king-starter/pkg/jwt"
 	"king-starter/pkg/logger"
+	"os"
 )
 
-// Core 应用核心，持有所有共享依赖
-type Core struct {
-	// 基础设施
-	Log    *logger.Logger
+// 全局唯一的 App 实例
+var globalApp *App
+
+// App 应用核心，持有所有共享依赖
+// App 只提供能力（HTTP Server / MQ Client / Cron Scheduler / DB / Redis）
+type App struct {
+	// 配置文件实例
 	Config *config.Config
-	Db     *database.DB
-	Jwt    *jwt.JWT
+	// 日志实例
+	Log *logger.Logger
+	// 数据库实例
+	Db *database.DB
+	// 缓存实例
+	//Cache *cache.Cache
+	// JWT 实例
+	Jwt *jwt.JWT
+	// Http 服务实例
+	Server *http.Server
 }
 
-// 1. 定义一个包级私有变量，用来持有全局唯一的 Core 实例
-var core *Core
-
-// New 初始化 Core 实例，并赋值给全局变量 core
-// 注意：通常建议返回 *Core 而不是无返回，或者只初始化一次。这里为了兼容你的逻辑。
-func New(cfg *config.Config) *Core {
-	log := logger.New(cfg.Logger)
+// New 初始化 App 实例
+func New(cfg *config.Config) *App {
+	// 初始化 log
+	log := Must(logger.New(cfg.Logger))
 	log.Info("logger initialized")
 
+	// 初始化 database.default
 	databaseConfig := cfg.Database["default"]
-	defaultDB, _ := database.New(databaseConfig, log)
+	defaultDB := Must(database.New(databaseConfig, log))
 	log.Info("database default initialized")
 
-	jwtConfig := cfg.Jwt
-	jwtIns := jwt.NewWithConfig(jwtConfig)
+	// 初始化 JWT
+	jwtIns := Must(jwt.NewWithConfig(cfg.Jwt))
 	log.Info("jwt initialized")
-	// 2. 实例化并赋值给全局变量
-	core = &Core{
-		Log:    log.With(logger.String("component", "core")),
+
+	// 初始化 HTTP 服务
+	server := Must(http.New(cfg.Http, log))
+
+	globalApp = &App{
+		Log:    log.Named("app"),
 		Config: cfg,
 		Db:     defaultDB,
 		Jwt:    jwtIns,
+		Server: server,
 	}
-	log.Info("core initialized")
+	log.Info("globalApp initialized")
+	return globalApp
+}
 
-	return core
+// Start 启动
+func (c *App) Start() {
+	err := c.Server.Start()
+	if err != nil {
+		c.Log.Error("server start failed. Error msg is: %s" + err.Error())
+		os.Exit(1)
+	}
 }
 
 // Shutdown 资源清理
-func (c *Core) Shutdown() {
+func (c *App) Shutdown() {
 	if c == nil {
 		return
 	}
@@ -57,16 +80,24 @@ func (c *Core) Shutdown() {
 	c.Log.Close()
 }
 
-func mustCore() *Core {
-	if core == nil {
-		panic("g core not initialized, call g.NewWithConfig() first")
+func Must[T any](val T, err error) T {
+	if err != nil {
+		panic(err)
 	}
-	return core
+	return val
+}
+
+func MustCore() *App {
+	if globalApp == nil {
+		panic("g globalApp not initialized, call g.NewWithConfig() first")
+	}
+	return globalApp
 }
 
 // 提供全局访问方法
 
-func DB() *database.DB       { return mustCore().Db }
-func Logger() *logger.Logger { return mustCore().Log }
-func Config() *config.Config { return mustCore().Config }
-func JWT() *jwt.JWT          { return mustCore().Jwt }
+func DB() *database.DB       { return MustCore().Db }
+func Logger() *logger.Logger { return MustCore().Log }
+func Config() *config.Config { return MustCore().Config }
+func JWT() *jwt.JWT          { return MustCore().Jwt }
+func Server() *http.Server   { return MustCore().Server }

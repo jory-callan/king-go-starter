@@ -13,6 +13,8 @@ import (
 	gormlogger "gorm.io/gorm/logger"
 )
 
+//Silent (1) >= Error (2) >= Warn (3) >= Info (4)。
+
 // gormLogger GORM日志适配器
 type gormLogger struct {
 	logger        *logger.Logger
@@ -44,9 +46,11 @@ func newGormLogger(logger *logger.Logger, level string, slowThreshold time.Durat
 }
 
 func (l *gormLogger) LogMode(level gormlogger.LogLevel) gormlogger.Interface {
-	newLogger := *l
-	newLogger.level = level
-	return &newLogger
+	//newLogger := *l
+	//newLogger.level = level
+	//return &newLogger
+	l.level = level
+	return l
 }
 func (l *gormLogger) Info(ctx context.Context, msg string, data ...interface{}) {
 	if l.level >= gormlogger.Info {

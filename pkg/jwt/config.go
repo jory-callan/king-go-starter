@@ -15,7 +15,7 @@ type JwtConfig struct {
 // Validate 简单验证
 func (c *JwtConfig) Validate() error {
 	if c.Secret == "" {
-		return fmt.Errorf("jwt secret is required")
+		return fmt.Errorf("[jwtconfig] jwt secret is required")
 	}
 	return nil
 }
