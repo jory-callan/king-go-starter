@@ -53,7 +53,7 @@ func DefaultLoggerConfig() LoggerConfig {
 		MaxBackups: 5,
 		MaxAge:     7,
 		Compress:   true,
-		CallerSkip: 2,
+		CallerSkip: 1,
 	}
 }
 
