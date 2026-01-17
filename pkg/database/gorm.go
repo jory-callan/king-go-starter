@@ -110,5 +110,4 @@ func (d *DB) Close() {
 		d.log.Error("[database] close failed")
 	}
 	d.log.Info("[database] closed")
-	return
 }

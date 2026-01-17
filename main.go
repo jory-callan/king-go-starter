@@ -1,10 +1,11 @@
 package main
 
 import (
-	"github.com/gookit/goutil/dump"
 	"king-starter/config"
 	"king-starter/internal/app"
 	"king-starter/internal/router"
+
+	"github.com/gookit/goutil/dump"
 )
 
 func main() {
