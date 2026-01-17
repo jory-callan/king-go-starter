@@ -6,7 +6,7 @@ import (
 	"king-starter/pkg/http"
 	"king-starter/pkg/jwt"
 	"king-starter/pkg/logger"
-	"os"
+	gohttp "net/http"
 )
 
 // 全局唯一的 App 实例
@@ -61,9 +61,8 @@ func New(cfg *config.Config) *App {
 // Start 启动
 func (c *App) Start() {
 	err := c.Server.Start()
-	if err != nil {
-		c.Log.Error("server start failed. Error msg is: %s" + err.Error())
-		os.Exit(1)
+	if err != nil && err != gohttp.ErrServerClosed {
+		c.Log.Panic("server start failed. Error msg is: %s" + err.Error())
 	}
 }
 
