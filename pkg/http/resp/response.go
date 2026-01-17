@@ -1,67 +1,42 @@
 package resp
 
-import (
-	"github.com/labstack/echo/v4"
-)
-
 // Response 统一返回结构
 type Response struct {
-	Code    string      `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code string      `json:"code"`
+	Msg  string      `json:"msg"`
+	Data interface{} `json:"data,omitempty"`
 }
 
-/* === 1. Response 的 With 方法（基础链式调用）=== */
-func (r *Response) Success() *Response {
-	r.Code = SUCCESS.Code
-	return r
+type RespOption func(*Response)
+
+func WithMsg(msg string) RespOption {
+	return func(r *Response) { r.Msg = msg }
+}
+func WithCode(code string) RespOption {
+	return func(r *Response) { r.Code = code }
+}
+func WithData(data interface{}) RespOption {
+	return func(r *Response) { r.Data = data }
 }
 
-func (r *Response) Error(cm CodeMessage) *Response {
-	r.Code = cm.Code
-	return r
-}
-
-// WithCode 设置响应码
-func (r *Response) WithCode(code string) *Response {
-	r.Code = code
-	return r
-}
-
-// WithMessage 设置响应消息
-func (r *Response) WithMessage(message string) *Response {
-	r.Message = message
-	return r
-}
-
-// WithData 设置响应数据
-func (r *Response) WithData(data interface{}) *Response {
-	r.Data = data
-	return r
-}
-
-// Send 发送响应（HTTP 状态码根据 Code 动态判断）
-func (r *Response) Send(c echo.Context) {
-	status := r.statusCode()
-	c.JSON(status, r)
-}
-
-// statusCode 根据 Code 映射 HTTP 状态码
-func (r *Response) statusCode() int {
-	switch r.Code {
-	case SUCCESS.Code:
-		return 200
-	case UNAUTHORIZED.Code:
-		return 401
-	case FORBIDDEN.Code:
-		return 403
-	case NOT_FOUND.Code:
-		return 404
-	case INVALID_PARAM.Code, VALIDATE_ERROR.Code:
-		return 422
-	case SERVER_ERROR.Code, DB_ERROR.Code:
-		return 500
-	default:
-		return 200
+// 调用方式
+//   response.New(response.OK)
+//   response.New(response.OK, response.WithData(user))
+//   response.New(response.ErrUserNotFound)
+//   response.New(response.ErrUserNotFound, response.WithMsg("用户不存在，请检查ID"))
+//   response.New(response.OK, response.WithMsg("操作完成"), response.WithData(result))
+func New(codeMsg CodeMsg, opts ...RespOption) Response {
+	resp := Response{
+		Code: codeMsg.Code,
+		Msg:  codeMsg.Msg, // 默认用 CodeMsg 的 Msg
+		Data: nil,         // 默认无 data
 	}
+	for _, opt := range opts {
+		opt(&resp)
+	}
+	return resp
 }
+
+// 快捷函数（可选）
+func Success(opts ...RespOption) Response                { return New(OK, opts...) }
+func Error(codeMsg CodeMsg, opts ...RespOption) Response { return New(codeMsg, opts...) }

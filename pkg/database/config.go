@@ -16,6 +16,7 @@ type DatabaseConfig struct {
 	ConnMaxIdleTime int    // 连接最大空闲时间(毫秒)
 	LogLevel        string // 日志级别: silent, error, warn, info
 	SlowThreshold   int    // 慢查询阈值（毫秒）
+	TablePrefix     string // 表名前缀
 }
 
 // DefaultDatabaseConfig 返回默认的单实例配置
@@ -29,6 +30,7 @@ func DefaultDatabaseConfig() DatabaseConfig {
 		ConnMaxIdleTime: 5 * 60 * 1000,  // 5分钟
 		LogLevel:        "info",
 		SlowThreshold:   1000, // 1秒
+		TablePrefix:     "king_",
 	}
 }
 

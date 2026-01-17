@@ -11,6 +11,7 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 	glog "gorm.io/gorm/logger"
+	"gorm.io/gorm/schema"
 )
 
 // DB 封装 gorm.DB，提供统一数据库接口
@@ -35,12 +36,20 @@ func New(cfg *DatabaseConfig, log *logger.Logger) (*DB, error) {
 		return nil, fmt.Errorf("[database] instance invalid driver: %s (supported: mysql, postgresql, postgres, pg, pgsql, sqlite3, sqlite)", cfg.Driver)
 	}
 
+	// 配置命名策略
+	ns := schema.NamingStrategy{
+		SingularTable: true,            // 单数表名
+		TablePrefix:   cfg.TablePrefix, // 表名前缀
+	}
+
 	//创建GORM配置
 	gormConfig := &gorm.Config{
-		Logger: newGormLogger(log, cfg.LogLevel, 20*time.Millisecond),
-		//Logger:                 glog.Default,
-		SkipDefaultTransaction: true,
-		PrepareStmt:            true, // 预编译语句，提高性能
+		// Logger:                 newGormLogger(log, cfg.LogLevel, 20*time.Millisecond),
+		Logger:                                   glog.Discard,
+		SkipDefaultTransaction:                   true, // 跳过默认每条的事务，提高性能
+		PrepareStmt:                              true, // 预编译语句，提高性能
+		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束，避免迁移时的循环依赖问题
+		NamingStrategy:                           ns,   // 配置命名策略
 	}
 
 	_ = glog.Default
