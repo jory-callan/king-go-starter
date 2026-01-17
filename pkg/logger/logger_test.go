@@ -1,7 +1,6 @@
 package logger
 
 import (
-	"king-starter/config"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +10,7 @@ import (
 
 func TestNew(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
-		cfg := config.LoggerConfig{
+		cfg := LoggerConfig{
 			Level:      "debug",
 			Format:     "text",
 			Output:     "stdout",
@@ -23,33 +22,42 @@ func TestNew(t *testing.T) {
 		}
 		err := cfg.Validate()
 		require.NoError(t, err)
-		logger := New(&cfg)
+		logger, err := New(&cfg)
+		if err != nil {
+			t.Fatalf("New() error = %v", err)
+		}
 		require.NoError(t, err)
 		assert.NotNil(t, logger)
 		defer logger.Sync()
 	})
 
 	t.Run("invalid log level", func(t *testing.T) {
-		cfg := config.LoggerConfig{
+		cfg := LoggerConfig{
 			Level:  "invalid",
 			Format: "json",
 			Output: "stdout",
 		}
 
-		logger := New(&cfg)
+		logger, err := New(&cfg)
+		if err != nil {
+			t.Fatalf("New() error = %v", err)
+		}
 		assert.Panics(t, func() {
 			logger.Info("test message from default config")
 		})
 	})
 
 	t.Run("invalid output", func(t *testing.T) {
-		cfg := config.LoggerConfig{
+		cfg := LoggerConfig{
 			Level:  "info",
 			Format: "json",
 			Output: "invalid",
 		}
 
-		logger := New(&cfg)
+		logger, err := New(&cfg)
+		if err != nil {
+			t.Fatalf("New() error = %v", err)
+		}
 		assert.Panics(t, func() {
 			logger.Info("test message from default config")
 		})
@@ -57,7 +65,11 @@ func TestNew(t *testing.T) {
 }
 
 func TestNewWithDefaultConfig(t *testing.T) {
-	logger := NewWithDefaultConfig()
+	cfg := DefaultLoggerConfig()
+	logger, err := New(&cfg)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
 	assert.NotNil(t, logger)
 	defer logger.Sync()
 
@@ -67,7 +79,11 @@ func TestNewWithDefaultConfig(t *testing.T) {
 }
 
 func TestLoggerLoggingMethods(t *testing.T) {
-	logger := NewWithDefaultConfig()
+	cfg := DefaultLoggerConfig()
+	logger, err := New(&cfg)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
 	defer logger.Sync()
 
 	t.Run("Info", func(t *testing.T) {
@@ -95,7 +111,7 @@ func TestLoggerLoggingMethods(t *testing.T) {
 }
 
 func TestLoggerWithFileOutput(t *testing.T) {
-	cfg := config.LoggerConfig{
+	cfg := LoggerConfig{
 		Level:    "debug",
 		Format:   "json",
 		Output:   "file",
@@ -104,7 +120,10 @@ func TestLoggerWithFileOutput(t *testing.T) {
 		MaxAge:   1,
 	}
 
-	logger := New(&cfg)
+	logger, err := New(&cfg)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
 	assert.NotNil(t, logger)
 	defer logger.Sync()
 
@@ -112,7 +131,11 @@ func TestLoggerWithFileOutput(t *testing.T) {
 }
 
 func TestLoggerSync(t *testing.T) {
-	logger := NewWithDefaultConfig()
+	cfg := DefaultLoggerConfig()
+	logger, err := New(&cfg)
+	if err != nil {
+		t.Fatalf("New() error = %v", err)
+	}
 	assert.NotNil(t, logger)
 	defer logger.Sync()
 

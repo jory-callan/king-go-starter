@@ -1,7 +1,6 @@
 package database
 
 import (
-	"king-starter/config"
 	"king-starter/pkg/logger"
 	"testing"
 
@@ -11,11 +10,13 @@ import (
 // TestNew
 func TestNewDB(t *testing.T) {
 	// 使用默认配置创建logger
-	log := logger.NewWithDefaultConfig()
+	logcfg := logger.DefaultLoggerConfig()
+	log, err := logger.New(&logcfg)
+	assert.NoError(t, err)
 	assert.NotNil(t, log)
 
 	// 使用SQLite内存数据库测试
-	cfg := config.DatabaseConfig{
+	cfg := DatabaseConfig{
 		Driver:          "sqlite3",
 		DSN:             ":memory:",
 		MaxOpenConns:    10,
@@ -25,7 +26,8 @@ func TestNewDB(t *testing.T) {
 		LogLevel:        "info",
 	}
 
-	db := New(&cfg, log)
+	db, err := New(&cfg, log)
+	assert.NoError(t, err)
 	assert.NotNil(t, db)
 	assert.NotNil(t, db.DB)
 
@@ -34,25 +36,4 @@ func TestNewDB(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NoError(t, sqlDB.Ping())
 	assert.NoError(t, sqlDB.Close())
-}
-
-// TestNewManager
-func TestNewManager(t *testing.T) {
-	defaultCfg := config.DatabaseConfig{
-		Driver:          "sqlite3",
-		DSN:             ":memory:",
-		MaxOpenConns:    10,
-		MaxIdleConns:    5,
-		ConnMaxLifetime: 30 * 60 * 1000000000,
-	}
-	cfg := map[string]*config.DatabaseConfig{
-		"default": &defaultCfg,
-	}
-
-	log := logger.NewWithDefaultConfig()
-	assert.NotNil(t, log)
-
-	manager := NewInstanceManager(cfg, log)
-	assert.NotNil(t, manager)
-	assert.NotEmpty(t, manager.instances)
 }

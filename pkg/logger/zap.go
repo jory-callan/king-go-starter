@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
-	"gopkg.in/natefinch/lumberjack.v2"
 	"os"
 	"syscall"
 	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 // Logger 封装 zap.Logger，提供统一日志接口
@@ -20,7 +21,10 @@ type Logger struct {
 // New 创建 Logger 实例，使用提供的配置
 func New(cfg *LoggerConfig) (*Logger, error) {
 	// 解析日志级别
-	level := zapcore.InfoLevel
+	level, err := zapcore.ParseLevel(cfg.Level)
+	if err != nil {
+		return nil, fmt.Errorf("invalid log level: %s", cfg.Level)
+	}
 
 	// 创建 encoder
 	encoderConfig := zapcore.EncoderConfig{
@@ -42,8 +46,12 @@ func New(cfg *LoggerConfig) (*Logger, error) {
 
 	var encoder zapcore.Encoder
 	if cfg.Format == "json" {
+		//  JSON 格式,去掉颜色
+		encoderConfig.EncodeLevel = zapcore.LowercaseLevelEncoder
 		encoder = zapcore.NewJSONEncoder(encoderConfig)
 	} else {
+		// 文本格式, 保留颜色
+		encoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 		encoder = zapcore.NewConsoleEncoder(encoderConfig)
 	}
 
@@ -60,7 +68,7 @@ func New(cfg *LoggerConfig) (*Logger, error) {
 			Compress:   cfg.Compress,
 		})
 	} else {
-		panic(fmt.Sprintf("invalid output config: %s", cfg.Output))
+		return nil, fmt.Errorf("invalid output config: %s", cfg.Output)
 	}
 
 	// 创建 core
@@ -83,18 +91,10 @@ func (l *Logger) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
-// Close 关闭 logger（安全忽略 stdout/stderr 的 sync 错误）
+// Close 关闭 logger
 func (l *Logger) Close() {
-	err := l.Logger.Sync()
-	if err != nil {
-		// 忽略 stdout/stderr 的 sync 错误
-		if isStdoutStderrSyncError(err) {
-			return // 视为成功
-		}
-		l.Logger.Error("close logger failed", zap.Error(err))
-		return
-	}
-	return
+	// 直接忽略错误
+	l.Logger.Sync()
 }
 
 // isStdoutStderrSyncError 判断是否为 stdout/stderr 的 sync 错误
