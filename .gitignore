@@ -3,4 +3,4 @@ logs
 *.log
 *.db
 *.yml
-*.toml
+!*.example.yml
