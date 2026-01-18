@@ -26,14 +26,6 @@ type gormLogger struct {
 
 // newGormLogger 创建GORM日志适配器
 func newGormLogger(log logx.Logger, level string, slowThreshold time.Duration) gormlogx.Interface {
-	var buf [10]uintptr
-	n := runtime.Callers(0, buf[:])
-	frames := runtime.CallersFrames(buf[:n])
-	for i := 0; i < n; i++ {
-		frame, _ := frames.Next()
-		fmt.Printf("[%d] %s:%d\n", i, filepath.Base(frame.File), frame.Line)
-	}
-
 	var gormLevel gormlogx.LogLevel
 	switch strings.ToLower(level) {
 	case "silent":
