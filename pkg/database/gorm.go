@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"king-starter/pkg/logger"
+	"king-starter/pkg/logx"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -17,12 +17,14 @@ import (
 // DB 封装 gorm.DB，提供统一数据库接口
 type DB struct {
 	*gorm.DB
-	log *logger.Logger
+	log logx.Logger
 }
 
 // New 创建 Gorm 实例，使用提供的配置
-func New(cfg *DatabaseConfig, log *logger.Logger) (*DB, error) {
-	dbLog := log.Named("database")
+func New(cfg *DatabaseConfig, log logx.Logger) (*DB, error) {
+	dbLog := log.AddCallerSkip(0).Named("database")
+	dbLog.Info("initializing database", "driver", cfg.Driver)
+
 	// 根据驱动类型创建dialector
 	var dialector gorm.Dialector
 	switch cfg.Driver {
@@ -44,8 +46,7 @@ func New(cfg *DatabaseConfig, log *logger.Logger) (*DB, error) {
 	}
 	//创建GORM配置
 	gormConfig := &gorm.Config{
-		Logger: newGormLogger(dbLog, cfg.LogLevel, time.Duration(cfg.SlowThreshold)*time.Millisecond),
-		//Logger:                                   glog.Default,
+		Logger:                                   newGormLogger(dbLog, cfg.LogLevel, time.Duration(cfg.SlowThreshold)*time.Millisecond),
 		SkipDefaultTransaction:                   true, // 跳过默认每条的事务，提高性能
 		PrepareStmt:                              true, // 预编译语句，提高性能
 		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束，避免迁移时的循环依赖问题
@@ -87,15 +88,15 @@ func (d *DB) HealthCheck(ctx context.Context) error {
 	start := time.Now()
 	sqlDB, err := d.DB.DB()
 	if err != nil {
-		d.log.Error("get sql db failed", logger.Error(err))
+		d.log.Error("get sql db failed", "error", err)
 		return err
 	}
 	if err := sqlDB.PingContext(ctx); err != nil {
-		d.log.Error("[database] ping failed", logger.Error(err))
+		d.log.Error("[database] ping failed", "error", err)
 		return err
 	}
 	d.log.Debug("[database] ping ok",
-		logger.Duration("cost", time.Since(start)),
+		"cost", time.Since(start),
 	)
 	return nil
 }

@@ -32,8 +32,7 @@ func (m *Module) Register(core *app.App) {
 	}
 
 	e := core.Server.Engine()
-	jwtMiddleware := middleware.JWT(core.Jwt)
-	rateLimitMiddleware := middleware.RateLimit(core.Log)
+	rateLimitMiddleware := middleware.RateLimit()
 
 	public := e.Group("/api/v1/user", rateLimitMiddleware)
 	{
@@ -41,10 +40,14 @@ func (m *Module) Register(core *app.App) {
 		public.POST("/login", m.handler.Login)
 		public.POST("/reset-code", m.handler.GenerateResetCode)
 		public.POST("/reset-password", m.handler.ResetPassword)
+		public.GET("/profile", m.handler.GetProfile)
+		//public.POST("/logout", m.handler.Logout)
+
 	}
 
-	protected := e.Group("/api/v1/user", rateLimitMiddleware, jwtMiddleware)
-	{
-		protected.GET("/profile", m.handler.GetProfile)
-	}
+	//jwtMiddleware := middleware.JWT(core.Jwt)
+	//protected := e.Group("/api/v1/user", rateLimitMiddleware, jwtMiddleware)
+	//{
+	//	protected.GET("/profile", m.handler.GetProfile)
+	//}
 }

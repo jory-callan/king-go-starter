@@ -98,7 +98,8 @@ func (h *Handler) ResetPassword(c echo.Context) error {
 }
 
 func (h *Handler) GetProfile(c echo.Context) error {
-	userID := c.Get("user_id").(uint)
+	//userID := c.Get("user_id").(uint)
+	userID := c.QueryParam("user_id")
 
 	var user User
 	if err := h.service.GetDB().First(&user, userID).Error; err != nil {

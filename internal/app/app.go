@@ -8,7 +8,7 @@ import (
 	"king-starter/pkg/database"
 	"king-starter/pkg/http"
 	"king-starter/pkg/jwt"
-	"king-starter/pkg/logger"
+	"king-starter/pkg/logx"
 )
 
 // 全局唯一的 App 实例
@@ -19,8 +19,8 @@ var globalApp *App
 type App struct {
 	// 配置文件实例
 	Config *config.Config
-	// 日志实例
-	Log *logger.Logger
+	// 日志接口
+	Log logx.Logger
 	// 数据库实例
 	Db *database.DB
 	// 缓存实例
@@ -34,7 +34,7 @@ type App struct {
 // New 初始化 App 实例
 func New(cfg *config.Config) *App {
 	// 初始化 log
-	log := Must(logger.New(cfg.Logger))
+	log := Must(logx.NewSlog(cfg.Logger))
 	log.Info("logger initialized")
 
 	// 初始化 database.default
@@ -98,7 +98,7 @@ func MustCore() *App {
 // 提供全局访问方法
 
 func DB() *database.DB       { return MustCore().Db }
-func Logger() *logger.Logger { return MustCore().Log }
+func Logger() logx.Logger    { return MustCore().Log }
 func Config() *config.Config { return MustCore().Config }
 func JWT() *jwt.JWT          { return MustCore().Jwt }
 func Server() *http.Server   { return MustCore().Server }

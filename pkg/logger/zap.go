@@ -2,10 +2,8 @@ package logger
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
-	"syscall"
 	"time"
 
 	"go.uber.org/zap"
@@ -13,13 +11,13 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-// Logger 封装 zap.Logger，提供统一日志接口
-type Logger struct {
+// zapLogger 封装 zap.Logger，提供统一日志接口
+type zapLogger struct {
 	*zap.Logger
 }
 
-// New 创建 Logger 实例，使用提供的配置
-func New(cfg *LoggerConfig) (*Logger, error) {
+// New 创建 zapLogger 实例，使用提供的配置
+func New(cfg *LoggerConfig) (*zapLogger, error) {
 	// 解析日志级别
 	level, err := zapcore.ParseLevel(cfg.Level)
 	if err != nil {
@@ -75,89 +73,64 @@ func New(cfg *LoggerConfig) (*Logger, error) {
 	core := zapcore.NewCore(encoder, writer, zap.NewAtomicLevelAt(level))
 
 	// 创建 logger
-	zapLogger := zap.New(core,
+	zapLog := zap.New(core,
 		zap.AddCaller(),
 		zap.AddCallerSkip(cfg.CallerSkip),
 		zap.AddStacktrace(zapcore.ErrorLevel),
 	)
 
-	return &Logger{
-		Logger: zapLogger.Named("log"),
+	return &zapLogger{
+		Logger: zapLog.Named("log"),
 	}, nil
 }
 
 // HealthCheck 健康检查
-func (l *Logger) HealthCheck(ctx context.Context) error {
+func (l *zapLogger) HealthCheck(ctx context.Context) error {
 	return nil
 }
 
 // Close 关闭 logger
-func (l *Logger) Close() {
+func (l *zapLogger) Close() {
 	// 直接忽略错误
 	l.Logger.Sync()
 }
 
-// isStdoutStderrSyncError 判断是否为 stdout/stderr 的 sync 错误
-func isStdoutStderrSyncError(err error) bool {
-	// 检查是否为 syscall.ENOTTY（inappropriate ioctl for device）
-	var errno syscall.Errno
-	if errors.As(err, &errno) {
-		return errors.Is(errno, syscall.ENOTTY)
-	}
-	// 兼容其他系统可能的错误信息（如 macOS）
-	return err.Error() == "sync /dev/stdout: inappropriate ioctl for device" ||
-		err.Error() == "sync /dev/stderr: inappropriate ioctl for device"
-}
-
-// With 添加自定义字段到 logger
-func (l *Logger) With(fields ...Field) *Logger {
-	return &Logger{
-		Logger: l.Logger.With(fields...),
-	}
-}
-
-func (l *Logger) Named(name string) *Logger {
-	return &Logger{
-		Logger: l.Logger.Named(name),
-	}
-}
-
 // 封装常用方法给第三方使用
 
-func (l *Logger) Debug(msg string, fields ...Field) {
+func (l *zapLogger) Debug(msg string, fields ...Field) {
 	l.Logger.Debug(msg, fields...)
 }
-func (l *Logger) Info(msg string, fields ...Field) {
+func (l *zapLogger) Info(msg string, fields ...Field) {
 	//按照时间
 	l.Logger.Info(msg, fields...)
 }
-func (l *Logger) Warn(msg string, fields ...Field) {
+func (l *zapLogger) Warn(msg string, fields ...Field) {
 	l.Logger.Warn(msg, fields...)
 }
-func (l *Logger) Error(msg string, fields ...Field) {
+func (l *zapLogger) Error(msg string, fields ...Field) {
 	l.Logger.Error(msg, fields...)
 }
-func (l *Logger) Any(msg string, args ...any) {
+func (l *zapLogger) Any(msg string, args ...any) {
 	l.Logger.Info(msg, Any("args", args))
 }
 
-func (l *Logger) Debugf(template string, args ...any) {
+func (l *zapLogger) Debugf(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
 	l.Logger.Debug(msg)
 }
-func (l *Logger) Infof(template string, args ...any) {
+func (l *zapLogger) Infof(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
 	l.Logger.Info(msg)
 }
-func (l *Logger) Warnf(template string, args ...any) {
+func (l *zapLogger) Warnf(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
 	l.Logger.Warn(msg)
 }
-func (l *Logger) Errorf(template string, args ...any) {
+func (l *zapLogger) Errorf(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
 	l.Logger.Error(msg)
 }
-func (l *Logger) Anyf(template string, args ...any) {
+func (l *zapLogger) Anyf(template string, args ...any) {
 	msg := fmt.Sprintf(template, args...)
 	l.Logger.Info(msg, Any("args", args))
 }

@@ -4,14 +4,14 @@ import (
 	"errors"
 	"time"
 
-	"king-starter/pkg/logger"
+	"king-starter/pkg/logx"
 
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
 )
 
 // EchoLogger 日志中间件
-func EchoLogger(log *logger.Logger) echo.MiddlewareFunc {
+func EchoLogger(logx logx.Logger) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			req := c.Request()
@@ -41,64 +41,50 @@ func EchoLogger(log *logger.Logger) echo.MiddlewareFunc {
 					status = he.Code
 				}
 			}
-
-			fields := []zap.Field{
-				//id 采用 X-Request-ID
-				zap.String("id", id),
-				// 请求ID X-Request-ID
-				zap.String("request_id", id),
-				// 请求IP 127.0.0.1
-				zap.String("remote_ip", c.RealIP()),
-				// 请求主机 host:port
-				zap.String("host", req.Host),
-				// 请求协议 HTTP/1.1
-				zap.String("proto", req.Proto),
-				// 请求方法 GET
-				zap.String("method", req.Method),
-				// 请求URI /api/v1/health
-				zap.String("uri", req.RequestURI),
-				// 请求路径 /api/v1/health
-				zap.String("path", req.URL.Path),
-				// 路由路径 /api/v1/health
-				zap.String("route", c.Path()), // actual matched route, e.g. "/users/:id"
-				// 用户代理 User-Agent
-				zap.String("user_agent", req.UserAgent()),
-				// 引用者 Referer
-				zap.String("referer", req.Referer()),
-				// 状态码 200
-				zap.Int("status", status),
-				// 耗时 1.234ms
-				zap.Duration("latency", latency),
-				// 耗时人类可读 1.234ms
-				zap.String("latency_human", latency.String()),
-				// 请求体大小 0
-				zap.Int64("bytes_in", req.ContentLength), // raw Content-Length, -1 if absent
-				// 响应体大小 123
-				zap.Int64("bytes_out", res.Size),
+			// 构建基础字段（固定顺序，便于阅读）
+			args := []any{
+				"id", id,
+				"request_id", id,
+				"remote_ip", c.RealIP(),
+				"host", req.Host,
+				"proto", req.Proto,
+				"method", req.Method,
+				"uri", req.RequestURI,
+				"path", req.URL.Path,
+				"route", c.Path(),
+				"user_agent", req.UserAgent(),
+				"referer", req.Referer(),
+				"status", status,
+				"latency", latency,
+				"latency_human", latency.String(),
+				"bytes_in", req.ContentLength,
+				"bytes_out", res.Size,
 			}
 
-			// Optional: extract dynamic fields only if present
+			// 动态字段：按需追加
 			if qs := req.URL.RawQuery; qs != "" {
-				fields = append(fields, zap.String("query_string", qs))
+				args = append(args, "query_string", qs)
+			}
+			if contentType := req.Header.Get("Content-Type"); contentType != "" {
+				args = append(args, "content_type", contentType)
 			}
 
-			if contentType := req.Header.Get("Content-Type"); contentType != "" {
-				fields = append(fields, zap.String("content_type", contentType))
-			}
+			// 使用 logx 记录日志
+			logx.Info("HTTP request completed", args...)
 
 			if err != nil {
 				// Do NOT use %v — may leak stack or secrets
-				fields = append(fields, zap.Error(err))
+				args = append(args, zap.Error(err))
 			}
 
 			// 根据状态码决定日志级别
 			switch {
 			case status >= 500:
-				log.Error("http 500 error", fields...)
+				logx.Error("http 500 error", args...)
 			case status >= 400:
-				log.Warn("http 400 error", fields...)
+				logx.Warn("http 400 error", args...)
 			default:
-				log.Info("http request", fields...)
+				logx.Info("http request", args...)
 			}
 
 			// 如果有错误，则返回错误，让下一个中间件处理

@@ -13,20 +13,20 @@ import (
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"golang.org/x/time/rate"
 	"king-starter/pkg/http/middleware"
-	"king-starter/pkg/logger"
+	"king-starter/pkg/logx"
 
 	"github.com/labstack/echo/v4"
 )
 
 // Server HTTP服务器封装（精简版）
 type Server struct {
-	log    *logger.Logger
+	log    logx.Logger
 	echo   *echo.Echo
 	config *HttpConfig
 }
 
 // New 创建Echo服务器
-func New(cfg *HttpConfig, log *logger.Logger) (*Server, error) {
+func New(cfg *HttpConfig, log logx.Logger) (*Server, error) {
 	// 创建Echo实例
 	e := echo.New()
 	// 隐藏Banner
@@ -71,7 +71,7 @@ func (s *Server) RegisterRoutes(registerFunc func(e *echo.Echo)) {
 func (s *Server) registerMiddleware() {
 	// 原生中间件
 	// 使用Echo内置的Recover中间件
-	s.echo.Use(echoMiddleware.Recover())
+	//s.echo.Use(echoMiddleware.Recover())
 	// 添加RequestID
 	s.echo.Use(echoMiddleware.RequestID())
 	// 添加日志中间件
@@ -85,10 +85,11 @@ func (s *Server) registerMiddleware() {
 	s.echo.Use(echoMiddleware.RateLimiter(echoMiddleware.NewRateLimiterMemoryStore(rate.Limit(20))))
 
 	// 自定义的中间件
+	s.echo.Use(middleware.EchoRecover(s.log))
 	// 请求日志中间件（使用我们的logger）
 	s.echo.Use(middleware.EchoLogger(s.log))
 	// 错误处理中间件
-	s.echo.HTTPErrorHandler = middleware.EchoErrorHandler(s.log)
+	s.echo.HTTPErrorHandler = middleware.EchoErrorHandler()
 
 }
 
@@ -106,7 +107,7 @@ func (s *Server) Start() error {
 	// 启动信号监听（非阻塞）
 	s.startSignalHandler()
 	// 打印启动信息
-	s.log.Infof("⇨ http server started on %s", addr)
+	s.log.Info("http server started", "addr", addr)
 	// 阻塞直到服务关闭
 	return s.echo.Start(addr)
 }
@@ -117,7 +118,7 @@ func (s *Server) startSignalHandler() {
 
 	go func() {
 		sig := <-quit
-		s.log.Info("received signal", logger.String("signal", sig.String()))
+		s.log.Info("received signal", "signal", sig.String())
 		s.Shutdown()
 	}()
 }
@@ -132,7 +133,7 @@ func (s *Server) Shutdown() {
 	defer cancel()
 	err := s.echo.Shutdown(ctx)
 	if err != nil {
-		s.log.Error("http server echo shutdown error", logger.Error(err))
+		s.log.Error("http server echo shutdown error", "error", err)
 		return
 	}
 	s.log.Info("http server stopped")

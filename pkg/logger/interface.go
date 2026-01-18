@@ -1,12 +1,12 @@
 package logger
 
-type ILogger interface {
-	Debug(msg string, fields ...Field)
-	Info(msg string, fields ...Field)
-	Warn(msg string, fields ...Field)
-	Error(msg string, fields ...Field)
-	Fatal(msg string, fields ...Field)
-	Panic(msg string, fields ...Field)
+// internalLogger 是 logx 内部统一接口，不暴露给用户
+type internalLogger interface {
+	Info(msg string, args ...any)
+	Warn(msg string, args ...any)
+	Error(msg string, args ...any)
+	Debug(msg string, args ...any)
+	Close() error
 
 	Debugf(format string, args ...any)
 	Infof(format string, args ...any)

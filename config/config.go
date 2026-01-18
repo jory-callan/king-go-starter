@@ -6,11 +6,11 @@ import (
 	"king-starter/pkg/database"
 	"king-starter/pkg/http"
 	"king-starter/pkg/jwt"
-	"king-starter/pkg/logger"
+	"king-starter/pkg/logx"
 )
 
 type Config struct {
-	Logger   *logger.LoggerConfig
+	Logger   *logx.LoggerConfig
 	Http     *http.HttpConfig
 	Database struct {
 		Default *database.DatabaseConfig
@@ -21,7 +21,7 @@ type Config struct {
 // DefaultConfig 返回默认的日志配置
 func DefaultConfig() Config {
 	c := Config{}
-	defaultLoggerConfig := logger.DefaultLoggerConfig()
+	defaultLoggerConfig := logx.DefaultLoggerConfig()
 	defaultHttpConfig := http.DefaultHttpConfig()
 	defaultDatabaseConfig := database.DefaultDatabaseConfig()
 	defaultJwtConfig := jwt.DefaultJwtConfig()

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"king-starter/internal/app"
+	"king-starter/pkg/logx"
 
 	"github.com/labstack/echo/v4"
 )
@@ -23,7 +24,7 @@ func (m *Router) Register(app *app.App) {
 	e := app.Server.Engine()
 	g := e.Group("/api/v1/hello")
 	g.GET("/echo", func(c echo.Context) error {
-		app.Log.Logger.Info("hello world")
+		logx.Info("hello world")
 		return c.String(http.StatusOK, "hello world")
 	})
 	g.GET("/error", func(c echo.Context) error {
@@ -33,6 +34,6 @@ func (m *Router) Register(app *app.App) {
 		return errors.New(" errors.New(xxxx) ")
 	})
 	g.GET("/panic", func(c echo.Context) error {
-		panic("panic")
+		panic("this will make panic")
 	})
 }

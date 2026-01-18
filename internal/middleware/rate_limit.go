@@ -1,18 +1,19 @@
 package middleware
 
 import (
-	"king-starter/pkg/logger"
 	"time"
+
+	"king-starter/pkg/logx"
 
 	"github.com/labstack/echo/v4"
 )
 
 const rateLimitWindow = time.Minute
 
-func RateLimit(log *logger.Logger) echo.MiddlewareFunc {
+func RateLimit() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			log.Info("middleware ==> rate limit , ip " + c.RealIP())
+			logx.Info("middleware ==> rate limit , ip " + c.RealIP())
 			//key := fmt.Sprintf("rate_limit:%s", c.RealIP())
 			//ctx := context.Background()
 			//pipe := rdb.Pipeline()
