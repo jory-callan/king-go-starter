@@ -1,8 +1,10 @@
 package middleware
 
 import (
-	"king-starter/pkg/logger"
+	"errors"
 	"time"
+
+	"king-starter/pkg/logger"
 
 	"github.com/labstack/echo/v4"
 	"go.uber.org/zap"
@@ -19,17 +21,25 @@ func EchoLogger(log *logger.Logger) echo.MiddlewareFunc {
 			err := next(c)
 			latency := time.Since(start)
 
+			// 提取状态码时要考虑错误可能修改的状态码
 			// Extract valuable fields, exactly like upstream logger
 			id := req.Header.Get(echo.HeaderXRequestID)
 			if id == "" {
 				id = res.Header().Get(echo.HeaderXRequestID)
 			}
 
+			//status := res.Status
+			//if err != nil {
+			//	// c.Error(err) may have updated status (e.g. via HTTPErrorHandler)
+			//	// echo sets res.Status on error, so this is safe
+			//	status = res.Status
+			//}
 			status := res.Status
 			if err != nil {
-				// c.Error(err) may have updated status (e.g. via HTTPErrorHandler)
-				// echo sets res.Status on error, so this is safe
-				status = res.Status
+				var he *echo.HTTPError
+				if errors.As(err, &he) {
+					status = he.Code
+				}
 			}
 
 			fields := []zap.Field{
@@ -76,10 +86,8 @@ func EchoLogger(log *logger.Logger) echo.MiddlewareFunc {
 				fields = append(fields, zap.String("content_type", contentType))
 			}
 
-			// Error field: only non-nil
 			if err != nil {
 				// Do NOT use %v — may leak stack or secrets
-				// Prefer safe string conversion
 				fields = append(fields, zap.Error(err))
 			}
 
@@ -92,7 +100,9 @@ func EchoLogger(log *logger.Logger) echo.MiddlewareFunc {
 			default:
 				log.Info("http request", fields...)
 			}
-			return nil
+
+			// 如果有错误，则返回错误，让下一个中间件处理
+			return err
 		}
 	}
 }

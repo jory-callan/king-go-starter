@@ -3,17 +3,19 @@ package http
 import (
 	"context"
 	"fmt"
-	"golang.org/x/time/rate"
-	"king-starter/pkg/http/middleware"
-	"king-starter/pkg/logger"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
-	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo-contrib/echoprometheus"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
+	"golang.org/x/time/rate"
+	"king-starter/pkg/http/middleware"
+	"king-starter/pkg/logger"
+
+	"github.com/labstack/echo/v4"
 )
 
 // Server HTTP服务器封装（精简版）
@@ -36,10 +38,6 @@ func New(cfg *HttpConfig, log *logger.Logger) (*Server, error) {
 	e.Server.WriteTimeout = time.Duration(cfg.WriteTimeout) * time.Millisecond
 	e.Server.MaxHeaderBytes = cfg.MaxHeaderBytes
 
-	e.GET("/ping", func(c echo.Context) error {
-		return c.String(http.StatusOK, "pong")
-	})
-
 	// 创建服务器实例
 	server := &Server{
 		log:    log.Named("http-server"),
@@ -52,16 +50,19 @@ func New(cfg *HttpConfig, log *logger.Logger) (*Server, error) {
 
 	// 注册健康检查
 	e.GET("/health", server.healthCheck)
+	e.GET("/ping", func(c echo.Context) error {
+		return c.String(http.StatusOK, "pong")
+	})
 
 	return server, nil
 }
 
-// Engine 为了方便外部访问 echo 实例（用于注册路由）
+// Engine 为了方便外部访问 echo 实例
 func (s *Server) Engine() *echo.Echo {
 	return s.echo
 }
 
-// RegisterRoutes 注册路由（符合 Go 惯例）
+// RegisterRoutes 注册路由
 func (s *Server) RegisterRoutes(registerFunc func(e *echo.Echo)) {
 	registerFunc(s.echo)
 }
@@ -73,8 +74,14 @@ func (s *Server) registerMiddleware() {
 	s.echo.Use(echoMiddleware.Recover())
 	// 添加RequestID
 	s.echo.Use(echoMiddleware.RequestID())
-	// s.echo.Use(echoMiddleware.Logger())
+	// 添加日志中间件
+	//s.echo.Use(echoMiddleware.RequestLogger())
+	// 添加 prometheus 中间件
+	s.echo.Use(echoprometheus.NewMiddleware("king"))    // adds middleware to gather metrics
+	s.echo.GET("/metrics", echoprometheus.NewHandler()) // adds route to serve gathered metrics
+	// 添加 CORS 中间件
 	s.echo.Use(echoMiddleware.CORS())
+	// 添加限流中间件
 	s.echo.Use(echoMiddleware.RateLimiter(echoMiddleware.NewRateLimiterMemoryStore(rate.Limit(20))))
 
 	// 自定义的中间件

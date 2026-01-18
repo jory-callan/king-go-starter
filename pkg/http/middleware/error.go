@@ -2,8 +2,9 @@ package middleware
 
 import (
 	"errors"
-	"king-starter/pkg/logger"
 	"net/http"
+
+	"king-starter/pkg/logger"
 
 	"github.com/labstack/echo/v4"
 )
@@ -14,24 +15,30 @@ func EchoErrorHandler(log *logger.Logger) echo.HTTPErrorHandler {
 		if c.Response().Committed {
 			return
 		}
-		// Send response
-		code := http.StatusInternalServerError
 		var he *echo.HTTPError
-		if errors.As(err, &he) {
-			code = he.Code
+		// 禁用 HEAD 请求
+		if c.Request().Method == http.MethodHead {
+			return
 		}
-		//log.Errorf("%+v", err)
-		if c.Request().Method == http.MethodHead { // Issue #608
-			err = c.NoContent(code)
-		} else {
-			err = c.JSON(code, map[string]any{
-				"code": code,
-				"msg":  "内部未知错误",
+		// 如果是 echo 的错误，按照 echo 的风格返回
+		if errors.As(err, &he) {
+			err = c.JSON(he.Code, map[string]any{
+				"code": he.Code,
+				"msg":  he.Message,
 				"data": nil,
 			})
 		}
+		// 返回错误内容，后续可以更改为指定的业务错误
+		// 返回 errors.New() 里面的字符串内容
 		if err != nil {
-			log.Error(err.Error())
+			err = c.JSON(http.StatusInternalServerError, map[string]any{
+				"code": "-1",
+				"msg":  err.Error(),
+				"data": nil,
+			})
 		}
+		// 记录日志，不用记录了有日志中间件记录
+		//logContent := fmt.Sprintf("method: %s, path: %s, status: %d, client_ip: %s, error: %v", c.Request().Method, c.Path(), code, c.RealIP(), err)
+		//log.Error("HTTP error response: " + logContent)
 	}
 }
