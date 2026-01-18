@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"king-starter/pkg/logger"
 	"strings"
 	"time"
 
-	"go.uber.org/zap"
+	"king-starter/pkg/logger"
+
 	"gorm.io/gorm"
 	gormlogger "gorm.io/gorm/logger"
 )
@@ -46,9 +46,6 @@ func newGormLogger(logger *logger.Logger, level string, slowThreshold time.Durat
 }
 
 func (l *gormLogger) LogMode(level gormlogger.LogLevel) gormlogger.Interface {
-	//newLogger := *l
-	//newLogger.level = level
-	//return &newLogger
 	l.level = level
 	return l
 }
@@ -77,18 +74,16 @@ func (l *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (stri
 	// 获取SQL和行数
 	sql, rows := fc()
 	// 构建日志字段
-	fields := []zap.Field{
-		zap.Duration("cost", elapsed),
-		zap.String("sql", sql),
-		zap.Int64("rows", rows),
-	}
+	fields := fmt.Sprintf("sql=%s, rows=%d, cost=%s", sql, rows, elapsed)
 	// 根据错误和执行时间输出日志
 	switch {
 	case err != nil && !errors.Is(err, gorm.ErrRecordNotFound) && l.level >= gormlogger.Error:
-		l.logger.Error("gorm error", append(fields, zap.Error(err))...)
+		fields = fields + fmt.Sprintf("error=%s", err)
+		l.logger.Error("gorm error --> " + fields)
 	case elapsed > l.slowThreshold && l.slowThreshold > 0 && l.level >= gormlogger.Warn:
-		l.logger.Warn("slow query", append(fields, zap.Duration("threshold", l.slowThreshold))...)
+		fields = fields + fmt.Sprintf("threshold=%s", l.slowThreshold)
+		l.logger.Warn("slow query --> " + fields)
 	case l.level >= gormlogger.Info:
-		l.logger.Debug("gorm query", fields...)
+		l.logger.Info("gorm query --> " + fields)
 	}
 }

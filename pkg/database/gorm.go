@@ -3,14 +3,14 @@ package database
 import (
 	"context"
 	"fmt"
-	"king-starter/pkg/logger"
 	"time"
+
+	"king-starter/pkg/logger"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	glog "gorm.io/gorm/logger"
 	"gorm.io/gorm/schema"
 )
 
@@ -22,6 +22,7 @@ type DB struct {
 
 // New 创建 Gorm 实例，使用提供的配置
 func New(cfg *DatabaseConfig, log *logger.Logger) (*DB, error) {
+	dbLog := log.Named("database")
 	// 根据驱动类型创建dialector
 	var dialector gorm.Dialector
 	switch cfg.Driver {
@@ -41,23 +42,18 @@ func New(cfg *DatabaseConfig, log *logger.Logger) (*DB, error) {
 		SingularTable: true,            // 单数表名
 		TablePrefix:   cfg.TablePrefix, // 表名前缀
 	}
-
 	//创建GORM配置
 	gormConfig := &gorm.Config{
-		// Logger:                 newGormLogger(log, cfg.LogLevel, 20*time.Millisecond),
-		Logger:                                   glog.Discard,
+		Logger: newGormLogger(dbLog, cfg.LogLevel, time.Duration(cfg.SlowThreshold)*time.Millisecond),
+		//Logger:                                   glog.Default,
 		SkipDefaultTransaction:                   true, // 跳过默认每条的事务，提高性能
 		PrepareStmt:                              true, // 预编译语句，提高性能
 		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束，避免迁移时的循环依赖问题
 		NamingStrategy:                           ns,   // 配置命名策略
 	}
 
-	_ = glog.Default
 	// 创建Gorm实例, 连接数据库
 	db, err := gorm.Open(dialector, gormConfig)
-	//db, err := gorm.Open(dialector, &gorm.Config{
-	//	Logger: glog.Default.LogMode(glog.Info), // 显示详细的 SQL 语句
-	//})
 	if err != nil {
 		log.Error(fmt.Sprintf("[database] failed to open database: %v", err))
 		return nil, err
@@ -82,7 +78,7 @@ func New(cfg *DatabaseConfig, log *logger.Logger) (*DB, error) {
 
 	return &DB{
 		DB:  db,
-		log: log.Named("database"),
+		log: dbLog,
 	}, nil
 }
 
