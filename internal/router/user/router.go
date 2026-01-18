@@ -3,6 +3,7 @@ package user
 import (
 	"king-starter/internal/app"
 	"king-starter/internal/middleware"
+	"king-starter/pkg/logx"
 )
 
 type Module struct {
@@ -33,6 +34,8 @@ func (m *Module) Register(core *app.App) {
 
 	e := core.Server.Engine()
 	rateLimitMiddleware := middleware.RateLimit()
+
+	logx.Info("logx直接调用")
 
 	public := e.Group("/api/v1/user", rateLimitMiddleware)
 	{

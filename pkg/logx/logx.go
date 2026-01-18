@@ -26,15 +26,6 @@ type Logger interface {
 	Close()
 }
 
-// NewZap initializes the global logger with zap backend.
-//	func NewZap(cfg *ZapConfig) error {
-//		var err error
-//		once.Do(func() {
-//			globalLogger, err = newZapLogger(cfg)
-//		})
-//		return err
-//	}
-
 // NewZap sets the global logger and returns it (for DI compatibility).
 func NewZap(cfg *LoggerConfig) (Logger, error) {
 	var l Logger
@@ -47,18 +38,6 @@ func NewZap(cfg *LoggerConfig) (Logger, error) {
 	})
 	return l, err
 }
-
-// NewSlog initializes the global logger with slog backend.
-//func NewSlog(cfg *LoggerConfig) error {
-//	var err error
-//	once.Do(func() {
-//		globalLogger, err = newSlogLogger(cfg)
-//		if err != nil {
-//			panic(err)
-//		}
-//	})
-//	return err
-//}
 
 // NewSlog sets the global logger and returns it (for DI compatibility).
 func NewSlog(cfg *LoggerConfig) (Logger, error) {

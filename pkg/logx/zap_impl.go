@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"time"
 
 	"go.uber.org/zap"
@@ -26,10 +27,17 @@ type ZapConfig struct {
 
 type zapLogger struct {
 	*zap.Logger
-	closer  io.Closer
-	logName string
+	closer io.Closer
 }
 
+func myCallerEncoder(caller zapcore.EntryCaller, enc zapcore.PrimitiveArrayEncoder) {
+	callFullPath := caller.FullPath()
+	gomodAbsPath, _ := filepath.Abs("go.mod")
+	absDir := filepath.Dir(gomodAbsPath)
+	//prefix := strings.TrimPrefix(callFullPath, absDir)
+	path, _ := filepath.Rel(absDir, callFullPath)
+	enc.AppendString(path)
+}
 func newZapLogger(cfg *LoggerConfig) (*zapLogger, error) {
 	level, err := zapcore.ParseLevel(cfg.Level)
 	if err != nil {
@@ -50,7 +58,7 @@ func newZapLogger(cfg *LoggerConfig) (*zapLogger, error) {
 			enc.AppendString(t.Format("2006-01-02 15:04:05"))
 		},
 		EncodeDuration:   zapcore.StringDurationEncoder, // 毫秒
-		EncodeCaller:     zapcore.ShortCallerEncoder,    // 只显示 main.go:12
+		EncodeCaller:     myCallerEncoder,               // 只显示 main.go:12
 		ConsoleSeparator: "  ",                          // 间隔符
 	}
 
@@ -90,12 +98,12 @@ func newZapLogger(cfg *LoggerConfig) (*zapLogger, error) {
 
 	core := zapcore.NewCore(encoder, writer, level)
 	logger := zap.New(core,
-		//zap.AddCaller(),
-		//zap.AddCallerSkip(2),
+		zap.AddCaller(),
+		//zap.AddCallerSkip(cfg.AddCallerSkip),
+		zap.AddCallerSkip(2),
 		zap.AddStacktrace(zapcore.ErrorLevel),
 	)
-	loggerName := cfg.LogName
-	return &zapLogger{logger, closer, loggerName}, nil
+	return &zapLogger{logger, closer}, nil
 }
 
 // Implement Logger interface
@@ -120,16 +128,15 @@ func (z *zapLogger) Panicf(format string, args ...any) {
 }
 
 func (z *zapLogger) With(args ...any) Logger {
-	return &zapLogger{z.Logger.With(kvToZapFields(args...)...), z.closer, z.logName}
+	return &zapLogger{z.Logger.With(kvToZapFields(args...)...), z.closer}
 }
 
 func (z *zapLogger) Named(name string) Logger {
-	newName := z.logName + "." + name
-	return &zapLogger{z.Logger.Named(name), z.closer, newName}
+	return &zapLogger{z.Logger.Named(name), z.closer}
 }
 
 func (z *zapLogger) AddCallerSkip(skip int) Logger {
-	return &zapLogger{z.Logger.WithOptions(zap.AddCallerSkip(skip)), z.closer, z.logName}
+	return &zapLogger{z.Logger.WithOptions(zap.AddCallerSkip(skip)), z.closer}
 }
 
 func (z *zapLogger) Close() {

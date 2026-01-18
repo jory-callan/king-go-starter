@@ -19,13 +19,12 @@ import (
 
 // gormLogger GORM日志适配器
 type gormLogger struct {
-	log           logx.Logger
 	level         gormlogx.LogLevel
 	slowThreshold time.Duration
 }
 
 // newGormLogger 创建GORM日志适配器
-func newGormLogger(log logx.Logger, level string, slowThreshold time.Duration) gormlogx.Interface {
+func newGormLogger(level string, slowThreshold time.Duration) gormlogx.Interface {
 	var gormLevel gormlogx.LogLevel
 	switch strings.ToLower(level) {
 	case "silent":
@@ -39,9 +38,7 @@ func newGormLogger(log logx.Logger, level string, slowThreshold time.Duration) g
 	default:
 		gormLevel = gormlogx.Info
 	}
-
 	return &gormLogger{
-		log:           log,
 		level:         gormLevel,
 		slowThreshold: slowThreshold,
 	}
@@ -53,17 +50,17 @@ func (l *gormLogger) LogMode(level gormlogx.LogLevel) gormlogx.Interface {
 }
 func (l *gormLogger) Info(ctx context.Context, msg string, data ...interface{}) {
 	if l.level >= gormlogx.Info {
-		l.log.Info(fmt.Sprintf(msg, data...))
+		logx.Info(fmt.Sprintf(msg, data...))
 	}
 }
 func (l *gormLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
 	if l.level >= gormlogx.Warn {
-		l.log.Warn(fmt.Sprintf(msg, data...))
+		logx.Warn(fmt.Sprintf(msg, data...))
 	}
 }
 func (l *gormLogger) Error(ctx context.Context, msg string, data ...interface{}) {
 	if l.level >= gormlogx.Error {
-		l.log.Error(fmt.Sprintf(msg, data...))
+		logx.Error(fmt.Sprintf(msg, data...))
 	}
 }
 func (l *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
@@ -81,12 +78,12 @@ func (l *gormLogger) Trace(ctx context.Context, begin time.Time, fc func() (stri
 	switch {
 	case err != nil && !errors.Is(err, gorm.ErrRecordNotFound) && l.level >= gormlogx.Error:
 		fields = fields + fmt.Sprintf("error=%s", err)
-		l.log.Error("gorm error --> " + fields)
+		logx.Error("gorm error --> " + fields)
 	case elapsed > l.slowThreshold && l.slowThreshold > 0 && l.level >= gormlogx.Warn:
 		fields = fields + fmt.Sprintf("threshold=%s", l.slowThreshold)
-		l.log.Warn("slow query --> " + fields)
+		logx.Warn("slow query --> " + fields)
 	case l.level >= gormlogx.Info:
-		l.log.Info("gorm query --> " + fields)
+		logx.Info("gorm query --> " + fields)
 	}
 }
 

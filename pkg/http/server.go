@@ -20,13 +20,14 @@ import (
 
 // Server HTTP服务器封装（精简版）
 type Server struct {
-	log    logx.Logger
 	echo   *echo.Echo
 	config *HttpConfig
 }
 
 // New 创建Echo服务器
-func New(cfg *HttpConfig, log logx.Logger) (*Server, error) {
+func New(cfg *HttpConfig) (*Server, error) {
+	logx.Named("httpserver")
+
 	// 创建Echo实例
 	e := echo.New()
 	// 隐藏Banner
@@ -40,7 +41,6 @@ func New(cfg *HttpConfig, log logx.Logger) (*Server, error) {
 
 	// 创建服务器实例
 	server := &Server{
-		log:    log.Named("http-server"),
 		echo:   e, // Echo实例
 		config: cfg,
 	}
@@ -85,9 +85,9 @@ func (s *Server) registerMiddleware() {
 	s.echo.Use(echoMiddleware.RateLimiter(echoMiddleware.NewRateLimiterMemoryStore(rate.Limit(20))))
 
 	// 自定义的中间件
-	s.echo.Use(middleware.EchoRecover(s.log))
+	s.echo.Use(middleware.EchoRecover())
 	// 请求日志中间件（使用我们的logger）
-	s.echo.Use(middleware.EchoLogger(s.log))
+	s.echo.Use(middleware.EchoLogger())
 	// 错误处理中间件
 	s.echo.HTTPErrorHandler = middleware.EchoErrorHandler()
 
@@ -102,39 +102,65 @@ func (s *Server) healthCheck(c echo.Context) error {
 	})
 }
 
+//	func (s *Server) Start() error {
+//		addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
+//		// 启动信号监听（非阻塞）
+//		s.startSignalHandler()
+//		// 打印启动信息
+//		logx.Info("http server started", "addr", addr)
+//		// 阻塞直到服务关闭
+//		return s.echo.Start(addr)
+//	}
+//
+//	func (s *Server) startSignalHandler() {
+//		quit := make(chan os.Signal, 1)
+//		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+//
+//		go func() {
+//			sig := <-quit
+//			logx.Info("received signal", "signal", sig.String())
+//			s.Shutdown()
+//		}()
+//	}
+
+// Start 后台启动，已经包含了优雅关闭
 func (s *Server) Start() error {
 	addr := fmt.Sprintf("%s:%d", s.config.Host, s.config.Port)
-	// 启动信号监听（非阻塞）
-	s.startSignalHandler()
-	// 打印启动信息
-	s.log.Info("http server started", "addr", addr)
-	// 阻塞直到服务关闭
-	return s.echo.Start(addr)
-}
-
-func (s *Server) startSignalHandler() {
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
+	errCh := make(chan error, 1)
+
 	go func() {
-		sig := <-quit
-		s.log.Info("received signal", "signal", sig.String())
-		s.Shutdown()
+		errCh <- s.echo.Start(addr)
 	}()
+
+	const banner = `
+========================================
+ Service Started
+ URL: http://127.0.0.1:%d
+========================================
+`
+	logx.Info("http server started success. addr is " + addr)
+	logx.Info(fmt.Sprintf(banner, s.config.Port))
+
+	// 阻塞等待
+	select {
+	case sig := <-quit:
+		logx.Info("received signal", "signal", sig.String())
+		s.Shutdown()
+	}
+	return <-errCh
 }
 
 func (s *Server) Shutdown() {
-	s.log.Info("http server shutting down")
-	if s.echo.Server == nil {
-		s.log.Error("http server not started")
-		return
-	}
+	logx.Info("http server shutting down")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(s.config.ShutdownTimeout)*time.Millisecond)
 	defer cancel()
 	err := s.echo.Shutdown(ctx)
 	if err != nil {
-		s.log.Error("http server echo shutdown error", "error", err)
+		logx.Error("http server echo shutdown error", "error", err)
 		return
 	}
-	s.log.Info("http server stopped")
+	logx.Info("http server stopped")
 }

@@ -12,29 +12,23 @@ import (
 
 // ZapLikeHandler mimics zap's console output style for slog.
 type ZapLikeHandler struct {
-	w      io.Writer
-	opts   slog.HandlerOptions
-	level  slog.Leveler
-	color  bool
-	groups []string
+	w          io.Writer
+	opts       slog.HandlerOptions
+	level      slog.Leveler
+	color      bool
+	callerSkip int
 }
 
 func newZapLikeHandler(w io.Writer, opts *slog.HandlerOptions) *ZapLikeHandler {
-	//var buf [10]uintptr
-	//n := runtime.Callers(0, buf[:])
-	//frames := runtime.CallersFrames(buf[:n])
-	//for i := 0; i < n; i++ {
-	//	frame, _ := frames.Next()
-	//	fmt.Printf("[%d] %s:%d\n", i, filepath.Base(frame.File), frame.Line)
-	//}
 	if opts == nil {
 		opts = &slog.HandlerOptions{}
 	}
 	h := &ZapLikeHandler{
-		w:     w,
-		opts:  *opts,
-		level: opts.Level,
-		color: isTerminal(w),
+		w:          w,
+		opts:       *opts,
+		level:      opts.Level,
+		color:      isTerminal(w),
+		callerSkip: 6,
 	}
 	return h
 }
@@ -46,13 +40,6 @@ func (h *ZapLikeHandler) Enabled(_ context.Context, level slog.Level) bool {
 
 // Handle implements slog.Handler.
 func (h *ZapLikeHandler) Handle(_ context.Context, r slog.Record) error {
-	//var buf [10]uintptr
-	//n := runtime.Callers(0, buf[:])
-	//frames := runtime.CallersFrames(buf[:n])
-	//for i := 0; i < n; i++ {
-	//	frame, _ := frames.Next()
-	//	fmt.Printf("[%d] %s:%d\n", i, filepath.Base(frame.File), frame.Line)
-	//}
 
 	// Time
 	timeStr := r.Time.Format("2006-01-02 15:04:05")
@@ -60,24 +47,37 @@ func (h *ZapLikeHandler) Handle(_ context.Context, r slog.Record) error {
 	// Level with color
 	levelStr := h.formatLevel(r.Level)
 
-	// 3. Logger name
-	loggerName := strings.Join(h.groups, ".")
-
 	// Message
 	msg := r.Message
 
+	// Caller (if AddSource is enabled)
+	callerStr := ""
+	if h.opts.AddSource && r.PC != 0 {
+		var pcs [1]uintptr
+		n := runtime.Callers(h.callerSkip, pcs[:])
+		if n > 0 {
+			frames := runtime.CallersFrames(pcs[:n])
+			frame, _ := frames.Next()
+			if frame.File != "" {
+				// cut filename from program directory
+				d, _ := os.Getwd()
+				parts := strings.Split(frame.File, d)
+				filename := parts[len(parts)-1]
+				filename = strings.TrimPrefix(filename, "/")
+				callerStr = fmt.Sprintf("%s:%d", filename, frame.Line)
+			}
+		}
+	}
+
 	var parts []string
 	parts = append(parts, timeStr, levelStr)
-	if loggerName != "" {
-		parts = append(parts, loggerName)
+	if callerStr != "" {
+		parts = append(parts, callerStr)
 	}
 
 	parts = append(parts, msg)
 
-	// Build prefix: time level [caller] msg
-	prefix := strings.Join(parts, "")
-
-	prefix = fmt.Sprintf("%s  %s  %s", timeStr, levelStr, msg)
+	prefix := strings.Join(parts, "  ")
 
 	// Append attributes (key=value)
 	attrs := make([]string, 0, r.NumAttrs())
@@ -107,18 +107,11 @@ func (h *ZapLikeHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 
 // WithGroup implements slog.Handler.
 func (h *ZapLikeHandler) WithGroup(name string) slog.Handler {
-	if name == "" {
-		return h
-	}
-	newGroups := make([]string, len(h.groups)+1)
-	copy(newGroups, h.groups)
-	newGroups[len(h.groups)] = name
 	return &ZapLikeHandler{
-		w:      h.w,
-		opts:   h.opts,
-		level:  h.level,
-		color:  h.color,
-		groups: newGroups,
+		w:     h.w,
+		opts:  h.opts,
+		level: h.level,
+		color: h.color,
 	}
 }
 
@@ -164,32 +157,4 @@ func isatty(fd uintptr) bool {
 	// Simplified: assume stdout/stderr are terminals
 	// For production, use: go get github.com/mattn/go-isatty
 	return fd == 1 || fd == 2 // stdout/stderr
-}
-
-func (h *ZapLikeHandler) detectCallerSkip() int {
-	// find the first caller, the one is this file:lineNumber
-	//var buf [10]uintptr
-	//n := runtime.Callers(0, buf[:])
-	//frames := runtime.CallersFrames(buf[:n])
-	//for i := 0; i < n; i++ {
-	//	frame, _ := frames.Next()
-	//	fmt.Printf("[%d] %s:%d\n", i, filepath.Base(frame.File), frame.Line)
-	//}
-
-	// Record a test log and capture its PC
-	var testPC uintptr
-	func() {
-		var pcs [1]uintptr
-		runtime.Callers(1, pcs[:]) // skip this func
-		testPC = pcs[0]
-	}()
-	// Now simulate a log call and see what skip gives us testPC
-	for skip := 0; skip <= 10; skip++ {
-		var pcs [1]uintptr
-		n := runtime.Callers(skip, pcs[:])
-		if n > 0 && pcs[0] == testPC {
-			return skip
-		}
-	}
-	return 5 // fallback
 }

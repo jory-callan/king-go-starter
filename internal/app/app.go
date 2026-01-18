@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	gohttp "net/http"
+	"time"
 
 	"king-starter/config"
 	"king-starter/pkg/database"
@@ -19,12 +20,8 @@ var globalApp *App
 type App struct {
 	// 配置文件实例
 	Config *config.Config
-	// 日志接口
-	Log logx.Logger
 	// 数据库实例
 	Db *database.DB
-	// 缓存实例
-	//Cache *cache.Cache
 	// JWT 实例
 	Jwt *jwt.JWT
 	// Http 服务实例
@@ -34,29 +31,28 @@ type App struct {
 // New 初始化 App 实例
 func New(cfg *config.Config) *App {
 	// 初始化 log
-	log := Must(logx.NewSlog(cfg.Logger))
-	log.Info("logger initialized")
+	Must(logx.NewZap(cfg.Logger))
+	logx.Info("logger initialized")
 
 	// 初始化 database.default
 	databaseConfig := cfg.Database.Default
-	defaultDB := Must(database.New(databaseConfig, log))
-	log.Info("database default initialized")
+	defaultDB := Must(database.New(databaseConfig))
+	logx.Info("database default initialized")
 
 	// 初始化 JWT
 	jwtIns := Must(jwt.NewWithConfig(cfg.Jwt))
-	log.Info("jwt initialized")
+	logx.Info("jwt initialized")
 
 	// 初始化 HTTP 服务
-	server := Must(http.New(cfg.Http, log))
+	server := Must(http.New(cfg.Http))
 
 	globalApp = &App{
-		Log:    log.Named("app"),
 		Config: cfg,
 		Db:     defaultDB,
 		Jwt:    jwtIns,
 		Server: server,
 	}
-	log.Info("globalApp initialized")
+	logx.Info("globalApp initialized")
 	return globalApp
 }
 
@@ -64,7 +60,9 @@ func New(cfg *config.Config) *App {
 func (c *App) Start() {
 	err := c.Server.Start()
 	if err != nil && !errors.Is(err, gohttp.ErrServerClosed) {
-		c.Log.Panic("server start failed. Error msg is: %s" + err.Error())
+		msg := "server start failed. Error msg is: %s" + err.Error()
+		logx.Info(msg)
+		panic(err)
 	}
 }
 
@@ -73,12 +71,11 @@ func (c *App) Shutdown() {
 	if c == nil {
 		return
 	}
-	// 关闭Redis连接
-	// c.Redis.Close()
+	time.Sleep(3 * time.Second)
 	// 关闭数据库连接
 	c.Db.Close()
 	// 关闭日志
-	c.Log.Close()
+	logx.Close()
 }
 
 func Must[T any](val T, err error) T {
@@ -98,7 +95,6 @@ func MustCore() *App {
 // 提供全局访问方法
 
 func DB() *database.DB       { return MustCore().Db }
-func Logger() logx.Logger    { return MustCore().Log }
 func Config() *config.Config { return MustCore().Config }
 func JWT() *jwt.JWT          { return MustCore().Jwt }
 func Server() *http.Server   { return MustCore().Server }

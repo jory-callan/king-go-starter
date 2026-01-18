@@ -11,7 +11,7 @@ import (
 )
 
 // EchoLogger 日志中间件
-func EchoLogger(logx logx.Logger) echo.MiddlewareFunc {
+func EchoLogger() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
 			req := c.Request()
@@ -21,19 +21,11 @@ func EchoLogger(logx logx.Logger) echo.MiddlewareFunc {
 			err := next(c)
 			latency := time.Since(start)
 
-			// 提取状态码时要考虑错误可能修改的状态码
-			// Extract valuable fields, exactly like upstream logger
 			id := req.Header.Get(echo.HeaderXRequestID)
 			if id == "" {
 				id = res.Header().Get(echo.HeaderXRequestID)
 			}
 
-			//status := res.Status
-			//if err != nil {
-			//	// c.Error(err) may have updated status (e.g. via HTTPErrorHandler)
-			//	// echo sets res.Status on error, so this is safe
-			//	status = res.Status
-			//}
 			status := res.Status
 			if err != nil {
 				var he *echo.HTTPError
@@ -41,6 +33,7 @@ func EchoLogger(logx logx.Logger) echo.MiddlewareFunc {
 					status = he.Code
 				}
 			}
+
 			// 构建基础字段（固定顺序，便于阅读）
 			args := []any{
 				"id", id,
@@ -70,7 +63,7 @@ func EchoLogger(logx logx.Logger) echo.MiddlewareFunc {
 			}
 
 			// 使用 logx 记录日志
-			logx.Info("HTTP request completed", args...)
+			//logx.Info("http request completed", args...)
 
 			if err != nil {
 				// Do NOT use %v — may leak stack or secrets
@@ -80,11 +73,11 @@ func EchoLogger(logx logx.Logger) echo.MiddlewareFunc {
 			// 根据状态码决定日志级别
 			switch {
 			case status >= 500:
-				logx.Error("http 500 error", args...)
+				logx.Error("http request 500 error --> ", args...)
 			case status >= 400:
-				logx.Warn("http 400 error", args...)
+				logx.Warn("http request 400 error --> ", args...)
 			default:
-				logx.Info("http request", args...)
+				logx.Info("http request --> ", args...)
 			}
 
 			// 如果有错误，则返回错误，让下一个中间件处理

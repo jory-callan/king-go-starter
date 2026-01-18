@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/labstack/gommon/log"
 	"king-starter/pkg/logx"
 
 	"gorm.io/driver/mysql"
@@ -17,13 +18,12 @@ import (
 // DB 封装 gorm.DB，提供统一数据库接口
 type DB struct {
 	*gorm.DB
-	log logx.Logger
 }
 
 // New 创建 Gorm 实例，使用提供的配置
-func New(cfg *DatabaseConfig, log logx.Logger) (*DB, error) {
-	dbLog := log.AddCallerSkip(0).Named("database")
-	dbLog.Info("initializing database", "driver", cfg.Driver)
+func New(cfg *DatabaseConfig) (*DB, error) {
+	logx.Named("database")
+	logx.Info("initializing database", "driver", cfg.Driver)
 
 	// 根据驱动类型创建dialector
 	var dialector gorm.Dialector
@@ -35,8 +35,8 @@ func New(cfg *DatabaseConfig, log logx.Logger) (*DB, error) {
 	case "sqlite3", "sqlite":
 		dialector = sqlite.Open(cfg.DSN)
 	default:
-		log.Error(fmt.Sprintf("[database] unsupported driver: %s", cfg.Driver))
-		return nil, fmt.Errorf("[database] instance invalid driver: %s (supported: mysql, postgresql, postgres, pg, pgsql, sqlite3, sqlite)", cfg.Driver)
+		log.Error(fmt.Sprintf("database unsupported driver: %s", cfg.Driver))
+		return nil, fmt.Errorf("database instance invalid driver: %s (supported: mysql, postgresql, postgres, pg, pgsql, sqlite3, sqlite)", cfg.Driver)
 	}
 
 	// 配置命名策略
@@ -46,7 +46,7 @@ func New(cfg *DatabaseConfig, log logx.Logger) (*DB, error) {
 	}
 	//创建GORM配置
 	gormConfig := &gorm.Config{
-		Logger:                                   newGormLogger(dbLog, cfg.LogLevel, time.Duration(cfg.SlowThreshold)*time.Millisecond),
+		Logger:                                   newGormLogger(cfg.LogLevel, time.Duration(cfg.SlowThreshold)*time.Millisecond),
 		SkipDefaultTransaction:                   true, // 跳过默认每条的事务，提高性能
 		PrepareStmt:                              true, // 预编译语句，提高性能
 		DisableForeignKeyConstraintWhenMigrating: true, // 禁用外键约束，避免迁移时的循环依赖问题
@@ -56,14 +56,14 @@ func New(cfg *DatabaseConfig, log logx.Logger) (*DB, error) {
 	// 创建Gorm实例, 连接数据库
 	db, err := gorm.Open(dialector, gormConfig)
 	if err != nil {
-		log.Error(fmt.Sprintf("[database] failed to open database: %v", err))
+		log.Error(fmt.Sprintf("database failed to open database: %v", err))
 		return nil, err
 	}
 
 	// 获取底层sql.DB并配置连接池
 	sqlDB, err := db.DB()
 	if err != nil {
-		log.Error(fmt.Sprintf("[database] failed to get sql.DB: %v", err))
+		log.Error(fmt.Sprintf("database failed to get sql.DB: %v", err))
 		return nil, err
 	}
 
@@ -74,12 +74,11 @@ func New(cfg *DatabaseConfig, log logx.Logger) (*DB, error) {
 
 	// 测试连接
 	if err := sqlDB.Ping(); err != nil {
-		panic(fmt.Sprintf("[database] failed to ping database: %v", err))
+		panic(fmt.Sprintf("database failed to ping database: %v", err))
 	}
 
 	return &DB{
-		DB:  db,
-		log: dbLog,
+		DB: db,
 	}, nil
 }
 
@@ -88,14 +87,14 @@ func (d *DB) HealthCheck(ctx context.Context) error {
 	start := time.Now()
 	sqlDB, err := d.DB.DB()
 	if err != nil {
-		d.log.Error("get sql db failed", "error", err)
+		logx.Error("get sql db failed", "error", err)
 		return err
 	}
 	if err := sqlDB.PingContext(ctx); err != nil {
-		d.log.Error("[database] ping failed", "error", err)
+		logx.Error("database ping failed", "error", err)
 		return err
 	}
-	d.log.Debug("[database] ping ok",
+	logx.Debug("database ping ok",
 		"cost", time.Since(start),
 	)
 	return nil
@@ -109,11 +108,11 @@ func (d *DB) Close() {
 	var err error
 	sqlDB, err := d.DB.DB()
 	if err != nil {
-		d.log.Error("[database] get sql db failed")
+		logx.Error("database get sql db failed")
 	}
 	err = sqlDB.Close()
 	if err != nil {
-		d.log.Error("[database] close failed")
+		logx.Error("database close failed")
 	}
-	d.log.Info("[database] closed")
+	logx.Info("database closed")
 }

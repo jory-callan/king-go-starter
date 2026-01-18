@@ -9,18 +9,6 @@ import (
 	"gopkg.in/natefinch/lumberjack.v2"
 )
 
-type SlogConfig struct {
-	Level      string
-	Format     string // "json" or "text"
-	Output     string // "stdout" or "file"
-	FilePath   string
-	MaxSize    int
-	MaxBackups int
-	MaxAge     int
-	Compress   bool
-	// Note: Slog does not support dynamic caller skip
-}
-
 type slogLogger struct {
 	*slog.Logger
 	closer  io.Closer // 用于 lumberjack.Close()
@@ -30,8 +18,8 @@ type slogLogger struct {
 func newSlogLogger(cfg *LoggerConfig) (*slogLogger, error) {
 	level := parseSlogLevel(cfg.Level)
 	opts := &slog.HandlerOptions{
-		Level: level,
-		//AddSource: true,
+		Level:     level,
+		AddSource: cfg.AddCaller,
 	}
 
 	var handler slog.Handler
@@ -61,11 +49,9 @@ func newSlogLogger(cfg *LoggerConfig) (*slogLogger, error) {
 		handler = newZapLikeHandler(writer, opts)
 	}
 
-	loggerName := cfg.LogName
 	return &slogLogger{
-		Logger:  slog.New(handler),
-		closer:  closer,
-		logName: loggerName,
+		Logger: slog.New(handler),
+		closer: closer,
 	}, nil
 }
 
@@ -108,7 +94,6 @@ func (s *slogLogger) With(args ...any) Logger {
 }
 
 func (s *slogLogger) Named(name string) Logger {
-	//return &slogLogger{s.Logger.WithGroup(name), s.closer}
 	newName := s.logName + "." + name
 	return &slogLogger{
 		Logger:  s.Logger.With("logger", newName),

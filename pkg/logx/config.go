@@ -11,7 +11,7 @@ type LoggerConfig struct {
 	MaxBackups int    // 保留的旧日志文件数量
 	MaxAge     int    // 旧日志文件保留天数(天)
 	Compress   bool   // 是否压缩旧日志文件
-	LogName    string // 日志名称
+	AddCaller  bool   // 是否添加调用栈
 }
 
 func (c *LoggerConfig) Validate() error {
@@ -54,7 +54,7 @@ func DefaultLoggerConfig() LoggerConfig {
 		MaxBackups: 5,
 		MaxAge:     7,
 		Compress:   true,
-		LogName:    "app-king",
+		AddCaller:  false,
 	}
 }
 
