@@ -1,8 +1,10 @@
 package hello
 
 import (
-	"king-starter/internal/app"
+	"errors"
 	"net/http"
+
+	"king-starter/internal/app"
 
 	"github.com/labstack/echo/v4"
 )
@@ -19,7 +21,18 @@ func (m *Router) Name() string {
 
 func (m *Router) Register(app *app.App) {
 	e := app.Server.Engine()
-	e.GET("/hello", func(c echo.Context) error {
+	g := e.Group("/api/v1/hello")
+	g.GET("/echo", func(c echo.Context) error {
+		app.Log.Logger.Info("hello world")
 		return c.String(http.StatusOK, "hello world")
+	})
+	g.GET("/error", func(c echo.Context) error {
+		return echo.NewHTTPError(http.StatusBadRequest, " echo.NewHTTPError(http.StatusBadRequest, xxxx) ")
+	})
+	g.GET("/error2", func(c echo.Context) error {
+		return errors.New(" errors.New(xxxx) ")
+	})
+	g.GET("/panic", func(c echo.Context) error {
+		panic("panic")
 	})
 }

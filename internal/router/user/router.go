@@ -24,7 +24,7 @@ func (m *Module) Name() string {
 
 func (m *Module) Register(core *app.App) {
 	// AutoMigrate
-	err := core.Db.Debug().AutoMigrate(
+	err := core.Db.AutoMigrate(
 		&User{},
 	)
 	if err != nil {
