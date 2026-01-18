@@ -17,9 +17,9 @@ func EchoRecover(logx logx.Logger) echo.MiddlewareFunc {
 	return echoMiddleware.RecoverWithConfig(echoMiddleware.RecoverConfig{
 		StackSize: 2 << 10, // 2 KB
 		LogErrorFunc: func(c echo.Context, err error, stack []byte) error {
-			errMsg := fmt.Sprintf("内部服务错误: errmsg: %s , stack: %s", err.Error(), string(stack))
+			errMsg := fmt.Sprintf("painc error : errmsg: %s , stack: %s", err.Error(), string(stack))
 			logx.Error(errMsg)
-			err = echoresp.Error(c, http.StatusInternalServerError, resp.ErrInternalServer)
+			err = echoresp.Error(c, http.StatusInternalServerError, resp.ErrUnknown)
 			if err != nil {
 				return err
 			}

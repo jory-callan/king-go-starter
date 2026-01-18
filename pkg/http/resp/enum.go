@@ -14,6 +14,7 @@ var (
 	ErrNotFound     = CodeMsg{Code: "404", Msg: "资源不存在", Status: StatusClientError}
 	// 服务端错误
 	ErrInternalServer = CodeMsg{Code: "500", Msg: "内部服务错误", Status: StatusServerError}
+	ErrUnknown        = CodeMsg{Code: "500", Msg: "未知错误", Status: StatusServerError}
 )
 
 // CodeMsg 模拟枚举：错误码 + 消息 + 状态
