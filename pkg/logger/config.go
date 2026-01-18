@@ -49,6 +49,7 @@ func DefaultLoggerConfig() LoggerConfig {
 		Level:      "info",
 		Format:     "json",
 		Output:     "stdout",
+		FilePath:   "./app-king.log",
 		MaxSize:    100,
 		MaxBackups: 5,
 		MaxAge:     7,

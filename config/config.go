@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+
 	"king-starter/pkg/database"
 	"king-starter/pkg/http"
 	"king-starter/pkg/jwt"
@@ -11,20 +12,24 @@ import (
 type Config struct {
 	Logger   *logger.LoggerConfig
 	Http     *http.HttpConfig
-	Database map[string]*database.DatabaseConfig
-	Jwt      *jwt.JwtConfig
+	Database struct {
+		Default *database.DatabaseConfig
+	}
+	Jwt *jwt.JwtConfig
 }
 
 // DefaultConfig 返回默认的日志配置
 func DefaultConfig() Config {
+	c := Config{}
 	defaultLoggerConfig := logger.DefaultLoggerConfig()
 	defaultHttpConfig := http.DefaultHttpConfig()
 	defaultDatabaseConfig := database.DefaultDatabaseConfig()
-	return Config{
-		Logger:   &defaultLoggerConfig,
-		Http:     &defaultHttpConfig,
-		Database: map[string]*database.DatabaseConfig{"default": &defaultDatabaseConfig},
-	}
+	defaultJwtConfig := jwt.DefaultJwtConfig()
+	c.Logger = &defaultLoggerConfig
+	c.Http = &defaultHttpConfig
+	c.Database.Default = &defaultDatabaseConfig
+	c.Jwt = &defaultJwtConfig
+	return c
 }
 
 func (c *Config) Validate() error {

@@ -11,32 +11,32 @@ type HttpConfig struct {
 	Port int    `yaml:"port" json:"port"` // 监听端口
 
 	// 可选，有默认值
-	ReadTimeout     int `yaml:"read_timeout" json:"read_timeout"`         // 读取超时（毫秒）
-	WriteTimeout    int `yaml:"write_timeout" json:"write_timeout"`       // 写入超时（毫秒）
-	ShutdownTimeout int `yaml:"shutdown_timeout" json:"shutdown_timeout"` // 关闭超时（毫秒）
-	IdleTimeout     int `yaml:"idle_timeout" json:"idle_timeout"`         // 空闲连接超时时间（毫秒）
-	MaxHeaderBytes  int `yaml:"max_header_bytes" json:"max_header_bytes"` // 最大请求头字节数
-	MaxBodyBytes    int `yaml:"max_body_bytes" json:"max_body_bytes"`     // 最大请求体字节数
+	ReadTimeout     int // 读取超时（毫秒）
+	WriteTimeout    int // 写入超时（毫秒）
+	ShutdownTimeout int // 关闭超时（毫秒）
+	IdleTimeout     int // 空闲连接超时时间（毫秒）
+	MaxHeaderBytes  int // 最大请求头字节数
+	MaxBodyBytes    int // 最大请求体字节数
 	// CORE 跨域配置
-	CORS CORSConfig `yaml:"cors" json:"cors"` // CORS 跨域配置
+	CORS CORSConfig // CORS 跨域配置
 	// DEBUG 调试配置
-	EnableDebug bool `yaml:"enable_debug" json:"enable_debug"` // 是否启用调试模式
+	EnableDebug bool // 是否启用调试模式
 	// RATE_LIMIT 限流配置
-	RateLimit RateLimitConfig `yaml:"rate_limit" json:"rate_limit"` // 限流配置
+	RateLimit RateLimitConfig // 限流配置
 }
 
 type CORSConfig struct {
-	AllowOrigins  []string `yaml:"allow_origins" json:"allow_origins"`   // 允许的源
-	AllowMethods  []string `yaml:"allow_methods" json:"allow_methods"`   // 允许的 HTTP 方法
-	AllowHeaders  []string `yaml:"allow_headers" json:"allow_headers"`   // 允许的请求头
-	ExposeHeaders []string `yaml:"expose_headers" json:"expose_headers"` // 暴露给客户端的响应头
-	MaxAge        int      `yaml:"max_age" json:"max_age"`               // 预检请求缓存时间(秒)
+	AllowOrigins  []string // 允许的源
+	AllowMethods  []string // 允许的 HTTP 方法
+	AllowHeaders  []string // 允许的请求头
+	ExposeHeaders []string // 暴露给客户端的响应头
+	MaxAge        int      // 预检请求缓存时间(秒)
 }
 
 type RateLimitConfig struct {
-	Enabled           bool `yaml:"enabled" json:"enabled"`                         // 是否启用限流
-	RequestsPerSecond int  `yaml:"requests_per_second" json:"requests_per_second"` // 每秒允许的请求数
-	Burst             int  `yaml:"burst" json:"burst"`                             // 突发请求允许的最大数量
+	Enabled           bool // 是否启用限流
+	RequestsPerSecond int  // 每秒允许的请求数
+	Burst             int  // 突发请求允许的最大数量
 }
 
 // Validate 配置校验
@@ -69,7 +69,19 @@ func DefaultHttpConfig() HttpConfig {
 		IdleTimeout:     60000,
 		MaxHeaderBytes:  1048576,
 		MaxBodyBytes:    104857600,
-		EnableDebug:     true,
+		EnableDebug:     false,
+		CORS: CORSConfig{
+			AllowOrigins:  []string{"*"},
+			AllowMethods:  []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowHeaders:  []string{"Content-Type", "Authorization"},
+			ExposeHeaders: []string{"X-Request-ID"},
+			MaxAge:        86400,
+		},
+		RateLimit: RateLimitConfig{
+			Enabled:           true,
+			RequestsPerSecond: 100,
+			Burst:             20,
+		},
 	}
 }
 

@@ -1,12 +1,14 @@
 package app
 
 import (
+	"errors"
+	gohttp "net/http"
+
 	"king-starter/config"
 	"king-starter/pkg/database"
 	"king-starter/pkg/http"
 	"king-starter/pkg/jwt"
 	"king-starter/pkg/logger"
-	gohttp "net/http"
 )
 
 // 全局唯一的 App 实例
@@ -36,7 +38,7 @@ func New(cfg *config.Config) *App {
 	log.Info("logger initialized")
 
 	// 初始化 database.default
-	databaseConfig := cfg.Database["default"]
+	databaseConfig := cfg.Database.Default
 	defaultDB := Must(database.New(databaseConfig, log))
 	log.Info("database default initialized")
 
@@ -61,7 +63,7 @@ func New(cfg *config.Config) *App {
 // Start 启动
 func (c *App) Start() {
 	err := c.Server.Start()
-	if err != nil && err != gohttp.ErrServerClosed {
+	if err != nil && !errors.Is(err, gohttp.ErrServerClosed) {
 		c.Log.Panic("server start failed. Error msg is: %s" + err.Error())
 	}
 }
@@ -88,7 +90,7 @@ func Must[T any](val T, err error) T {
 
 func MustCore() *App {
 	if globalApp == nil {
-		panic("g globalApp not initialized, call g.NewWithConfig() first")
+		panic("app not initialized, init it first")
 	}
 	return globalApp
 }

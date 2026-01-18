@@ -2,8 +2,6 @@ package database
 
 import (
 	"fmt"
-
-	"github.com/gookit/goutil/dump"
 )
 
 // DatabaseConfig 单个数据库实例配置
@@ -42,12 +40,10 @@ func (c *DatabaseConfig) Validate() error {
 	default:
 		return fmt.Errorf("[config] database instance invalid driver: %s (supported: mysql, postgresql, postgres, pg, pgsql, sqlite3, sqlite)", c.Driver)
 	}
-
 	// 验证DSN
 	if c.DSN == "" {
 		return fmt.Errorf("[config] database instance DSN is required")
 	}
-	dump.P(c)
 	// 验证连接数
 	if c.MaxOpenConns <= 0 {
 		return fmt.Errorf("[config] database instance max_open_conns must be positive")
@@ -58,25 +54,11 @@ func (c *DatabaseConfig) Validate() error {
 	if c.MaxIdleConns > c.MaxOpenConns {
 		return fmt.Errorf("[config] database instance max_idle_conns cannot exceed max_open_conns")
 	}
-
 	// 验证日志级别
 	switch c.LogLevel {
 	case "silent", "error", "warn", "info":
 	default:
 		return fmt.Errorf("[config] database instance invalid log level: %s (supported: silent, error, warn, info)", c.LogLevel)
 	}
-
 	return nil
 }
-
-/*
-database:
-  driver: "sqlite3"   # 驱动类型: mysql, postgresql, sqlite3
-  dsn: "./test.db"
-  maxOpenConns: 10     # 最大打开连接数
-  maxIdleConns: 10      # 最大空闲连接数
-  connMaxLifetime: 1800000  # 连接最大存活时间(毫秒)
-  connMaxIdleTime: 300000  # 连接最大空闲时间(毫秒)
-  logLevel: "warn"       # 日志级别: silent, error, warn, info
-  slowThreshold: 1000    # 慢查询阈值(毫秒)
-*/

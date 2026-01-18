@@ -36,8 +36,8 @@ func TestEcho(t *testing.T) {
 	}()
 	// 启动服务（主 goroutine 在这里阻塞）
 	// 注意：不需要用 if err != nil 判断，因为 Shutdown 正常执行时，Start() 会返回 http.ErrServerClosed
-	fmt.Println("服务启动在 :8080")
-	if err := e.Start(":8080"); err != nil && err != http.ErrServerClosed {
+	fmt.Println("服务启动在 :8081")
+	if err := e.Start(":8081"); err != nil && err != http.ErrServerClosed {
 		e.Logger.Fatal("服务启动失败: " + err.Error())
 	}
 
