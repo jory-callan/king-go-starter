@@ -9,11 +9,12 @@ import (
 	"syscall"
 	"time"
 
+	"king-starter/pkg/http/middleware"
+	"king-starter/pkg/logx"
+
 	"github.com/labstack/echo-contrib/echoprometheus"
 	echoMiddleware "github.com/labstack/echo/v4/middleware"
 	"golang.org/x/time/rate"
-	"king-starter/pkg/http/middleware"
-	"king-starter/pkg/logx"
 
 	"github.com/labstack/echo/v4"
 )
@@ -145,11 +146,9 @@ func (s *Server) Start() error {
 	logx.Info(fmt.Sprintf(banner, s.config.Port))
 
 	// 阻塞等待
-	select {
-	case sig := <-quit:
-		logx.Info("received signal", "signal", sig.String())
-		s.Shutdown()
-	}
+	sig := <-quit
+	logx.Info("received signal", "signal", sig.String())
+	s.Shutdown()
 	return <-errCh
 }
 

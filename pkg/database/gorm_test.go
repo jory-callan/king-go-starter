@@ -1,7 +1,7 @@
 package database
 
 import (
-	"king-starter/pkg/logger"
+	"king-starter/pkg/logx"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,11 +9,8 @@ import (
 
 // TestNew
 func TestNewDB(t *testing.T) {
-	// 使用默认配置创建logger
-	logcfg := logger.DefaultLoggerConfig()
-	log, err := logger.New(&logcfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, log)
+	logxCfg := logx.DefaultLoggerConfig()
+	logx.NewSlog(&logxCfg)
 
 	// 使用SQLite内存数据库测试
 	cfg := DatabaseConfig{
@@ -26,7 +23,7 @@ func TestNewDB(t *testing.T) {
 		LogLevel:        "info",
 	}
 
-	db, err := New(&cfg, log)
+	db, err := New(&cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, db)
 	assert.NotNil(t, db.DB)
