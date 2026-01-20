@@ -5,8 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/labstack/gommon/log"
 	"king-starter/pkg/logx"
+
+	"github.com/labstack/gommon/log"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"

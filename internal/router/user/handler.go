@@ -1,8 +1,9 @@
 package user
 
 import (
-	"github.com/labstack/echo/v4"
 	"king-starter/internal/response"
+
+	"github.com/labstack/echo/v4"
 )
 
 type Handler struct {

@@ -1,8 +1,9 @@
 package middleware
 
 import (
-	"github.com/labstack/echo/v4"
 	"king-starter/pkg/jwt"
+
+	"github.com/labstack/echo/v4"
 )
 
 type JWTContextKey string
