@@ -2,8 +2,8 @@ package router
 
 import (
 	"king-starter/internal/app"
+	"king-starter/internal/router/auth"
 	"king-starter/internal/router/hello"
-	"king-starter/internal/router/user"
 )
 
 // Router 不自己初始化 Core，只注册自己到 Core 提供的运行环境
@@ -16,6 +16,6 @@ func RegisterAll(app *app.App) {
 	// 注册模块
 	hello.New().Register(app)
 
-	// 用户路由
-	user.New(app).Register(app)
+	// 认证路由
+	auth.New(app).Register(app)
 }
