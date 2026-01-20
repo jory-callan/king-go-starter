@@ -1,8 +1,9 @@
 package jwt
 
 import (
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // CustomClaims 自定义声明（按需扩展）
@@ -14,17 +15,17 @@ type CustomClaims struct {
 }
 
 type JWT struct {
-	secret []byte
-	issuer string
-	expire int
+	Secret []byte
+	Issuer string
+	Expire int
 }
 
 // New 创建 JWT 实例
 func New(secret []byte, issuer string, expire int) *JWT {
 	return &JWT{
-		secret: secret,
-		issuer: issuer,
-		expire: expire,
+		Secret: secret,
+		Issuer: issuer,
+		Expire: expire,
 	}
 }
 
@@ -45,15 +46,15 @@ func (j *JWT) GenerateToken(userID, username, roles string) (string, error) {
 		Username: username,
 		Roles:    roles,
 		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    j.issuer,
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(j.expire))),
+			Issuer:    j.Issuer,
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(j.Expire))),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(j.secret)
+	return token.SignedString(j.Secret)
 }
 
 // ParseToken 解析并验证 JWT 令牌
@@ -62,7 +63,7 @@ func (j *JWT) ParseToken(tokenString string) (*CustomClaims, error) {
 	// 如果令牌无效或claims不匹配，返回错误
 	// keyFunc 用于提供密钥，这里使用预定义的密钥
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return j.secret, nil
+		return j.Secret, nil
 	})
 	if err != nil {
 		return nil, err
@@ -82,9 +83,9 @@ func (j *JWT) RefreshToken(tokenString string) (string, error) {
 		return "", err
 	}
 	// 更新过期时间
-	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Duration(j.expire)))
+	claims.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Duration(j.Expire)))
 	// 生成新令牌
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 	// 签名并返回新令牌
-	return token.SignedString(j.secret)
+	return token.SignedString(j.Secret)
 }

@@ -10,6 +10,9 @@ import (
 	"gorm.io/gorm"
 )
 
+// BaseHandler 基础处理层, 只用于快速测试，不建议在生产环境使用
+//
+//	T: 实体模型类型
 type BaseHandler[T any] struct {
 	Svc *BaseService[T]
 }

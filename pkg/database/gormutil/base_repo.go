@@ -6,9 +6,9 @@ import (
 	"gorm.io/gorm"
 )
 
-// BaseRepo 泛型
-// T: 实体模型类型
-// ID: 主键类型 (如 uint, int, string)
+// BaseRepo 泛型, 基础仓库层, 提供基础的 CRUD 操作
+//
+//	T: 实体模型类型
 type BaseRepo[T any] struct {
 	DB *gorm.DB
 }
@@ -103,6 +103,6 @@ func (r *BaseRepo[T]) ListByCondition(ctx context.Context, conds interface{}, pa
 
 // GetDB 获取原始的 gorm.DB 实例
 // 用法: repo.GetDB().Where("name like ?", "%jack%").Find(&users)
-func (r *BaseRepo[T]) GetDB() *gorm.DB {
-	return r.DB
+func (r *BaseRepo[T]) GetDB(ctx context.Context) *gorm.DB {
+	return r.DB.WithContext(ctx)
 }
