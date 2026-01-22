@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/labstack/echo/v4"
+	"gorm.io/gorm"
 )
 
 type MenuHandler struct {
@@ -25,13 +26,13 @@ func (h *MenuHandler) CreateMenu(c echo.Context) error {
 
 	operatorID := "system-admin" // TODO: 从 Context 获取
 
-	menu := &Menu{
-		ParentID: req.ParentID,
-		Name:     req.Name,
-		Path:     req.Path,
-		Icon:     req.Icon,
-		Sort:     req.Sort,
-		Status:   req.Status,
+	menu := &CoreMenu{
+		ParentID:  req.ParentID,
+		Name:      req.Name,
+		Path:      req.Path,
+		Icon:      req.Icon,
+		Sort:      req.Sort,
+		Status:    req.Status,
 		CreatedBy: operatorID,
 		UpdatedBy: operatorID,
 	}
@@ -40,7 +41,7 @@ func (h *MenuHandler) CreateMenu(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "创建失败")
 	}
 
-	return response.SuccessWithMsg(c, "创建成功", nil)
+	return response.SuccessWithMsg[any](c, "创建成功", nil)
 }
 
 // GetMenuDetail 获取菜单详情
@@ -51,7 +52,7 @@ func (h *MenuHandler) GetMenuDetail(c echo.Context) error {
 		return response.Error(c, http.StatusNotFound, "菜单不存在")
 	}
 
-	return response.Success(c, menu)
+	return response.Success[any](c, menu)
 }
 
 // UpdateMenu 更新菜单
@@ -81,7 +82,7 @@ func (h *MenuHandler) UpdateMenu(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "更新失败")
 	}
 
-	return response.SuccessWithMsg(c, "更新成功", nil)
+	return response.SuccessWithMsg[any](c, "更新成功", nil)
 }
 
 // DeleteMenu 删除菜单
@@ -105,53 +106,49 @@ func (h *MenuHandler) DeleteMenu(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "删除失败")
 	}
 
-	return response.SuccessWithMsg(c, "删除成功", nil)
+	return response.SuccessWithMsg[any](c, "删除成功", nil)
 }
 
 // ListMenus 获取菜单列表
 func (h *MenuHandler) ListMenus(c echo.Context) error {
-	page, _ := strconv.Atoi(c.QueryParam("page"))
-	pageSize, _ := strconv.Atoi(c.QueryParam("page_size"))
+	var pq response.PageQuery
+	if err := c.Bind(&pq); err != nil {
+		return response.Error(c, http.StatusBadRequest, "请求参数错误")
+	}
+
+	// 确保 NeedCount 为 true 以返回总数
+	pq.NeedCount = true
+
+	// 获取查询参数
 	parentID := c.QueryParam("parent_id")
 	name := c.QueryParam("name")
 	statusStr := c.QueryParam("status")
 
-	if page <= 0 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 10
-	}
-
-	db := h.repo.GetDB(c.Request().Context())
-	query := db.Model(&Menu{})
+	// 创建筛选条件的 scope 函数
+	scopes := make([]func(*gorm.DB) *gorm.DB, 0)
 
 	if parentID != "" {
-		query = query.Where("parent_id = ?", parentID)
+		scopes = append(scopes, func(db *gorm.DB) *gorm.DB {
+			return db.Where("parent_id = ?", parentID)
+		})
 	}
 	if name != "" {
-		query = query.Where("name LIKE ?", "%"+name+"%")
+		scopes = append(scopes, func(db *gorm.DB) *gorm.DB {
+			return db.Where("name LIKE ?", "%"+name+"%")
+		})
 	}
 	if statusStr != "" {
-		status, _ := strconv.Atoi(statusStr)
-		query = query.Where("status = ?", status)
+		scopes = append(scopes, func(db *gorm.DB) *gorm.DB {
+			status, _ := strconv.Atoi(statusStr)
+			return db.Where("status = ?", status)
+		})
 	}
 
-	var total int64
-	if err := query.Count(&total).Error; err != nil {
+	// 使用 BaseRepo 的分页方法
+	result, err := h.repo.PaginationWithScopes(c.Request().Context(), &pq, scopes...)
+	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "查询失败")
 	}
 
-	var menus []*Menu
-	offset := (page - 1) * pageSize
-	if err := query.Offset(offset).Limit(pageSize).Find(&menus).Error; err != nil {
-		return response.Error(c, http.StatusInternalServerError, "查询失败")
-	}
-
-	return response.Success(c, map[string]interface{}{
-		"list":  menus,
-		"total": total,
-		"page":  page,
-		"size":  pageSize,
-	})
+	return response.SuccessPage[CoreMenu](c, *result)
 }

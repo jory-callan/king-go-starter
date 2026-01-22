@@ -6,8 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Role 角色
-type Role struct {
+// CoreRole 角色
+type CoreRole struct {
 	ID        string         `gorm:"type:varchar(32);primaryKey;comment:角色ID" json:"id"`
 	Code      string         `gorm:"type:varchar(50);uniqueIndex;not null;comment:角色编码" json:"code"`
 	Name      string         `gorm:"type:varchar(50);not null;comment:角色名称" json:"name"`
@@ -21,26 +21,26 @@ type Role struct {
 	DeletedBy string         `gorm:"type:varchar(32);comment:删除人ID" json:"deleted_by,omitempty"`
 }
 
-func (Role) TableName() string {
-	return "sys_role"
+func (CoreRole) TableName() string {
+	return "core_role"
 }
 
-// RoleMenuRelation 角色菜单关联表 (手动维护)
-type RoleMenuRelation struct {
+// CoreRoleMenu 角色菜单关联表 (手动维护)
+type CoreRoleMenu struct {
 	RoleID string `gorm:"type:varchar(32);primaryKey;comment:角色ID" json:"role_id"`
 	MenuID string `gorm:"type:varchar(32);primaryKey;comment:菜单ID" json:"menu_id"`
 }
 
-func (RoleMenuRelation) TableName() string {
-	return "sys_role_menu"
+func (CoreRoleMenu) TableName() string {
+	return "core_role_menu"
 }
 
-// RolePermissionRelation 角色权限关联表
-type RolePermissionRelation struct {
+// CoreRolePermission 角色权限关联表
+type CoreRolePermission struct {
 	RoleID       string `gorm:"type:varchar(32);primaryKey;comment:角色ID" json:"role_id"`
 	PermissionID string `gorm:"type:varchar(32);primaryKey;comment:权限ID" json:"permission_id"`
 }
 
-func (RolePermissionRelation) TableName() string {
-	return "sys_role_permission"
+func (CoreRolePermission) TableName() string {
+	return "core_role_permission"
 }

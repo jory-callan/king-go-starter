@@ -2,6 +2,7 @@ package gormutil
 
 import (
 	"context"
+	"king-starter/internal/response"
 
 	"gorm.io/gorm"
 )
@@ -58,51 +59,155 @@ func (r *BaseRepo[T]) DeleteBatch(ctx context.Context, ids []string) error {
 	return r.DB.WithContext(ctx).Delete(new(T), ids).Error
 }
 
-// List 分页查询 (基础版，不带条件)
-// page: 页码 (从 1 开始)
-// pageSize: 每页数量
-// 返回: 数据列表, 总数, 错误
-func (r *BaseRepo[T]) List(ctx context.Context, page, pageSize int) ([]T, int64, error) {
-	return r.ListByCondition(ctx, nil, page, pageSize)
-}
-
-// ListByCondition 根据条件分页查询 (增强版)
-// conds: 查询条件，可以是 map[string]interface{} 或 string (如 "name = ?", "tom")
-// page: 页码
-// pageSize: 每页数量
-func (r *BaseRepo[T]) ListByCondition(ctx context.Context, conds interface{}, page, pageSize int) ([]T, int64, error) {
-	var results []T
-	var total int64
-
-	query := r.DB.WithContext(ctx).Model(new(T))
-
-	// 如果有条件，应用条件
-	if conds != nil {
-		query = query.Where(conds)
-	}
-
-	// 统计总数
-	if err := query.Count(&total).Error; err != nil {
-		return nil, 0, err
-	}
-
-	// 分页查询
-	// 只有当 total > 0 时才去查列表，稍微优化一点性能
-	if total > 0 {
-		offset := (page - 1) * pageSize
-		// 防止 pageSize 为负数或过大导致报错
-		if offset < 0 {
-			offset = 0
-		}
-		err := query.Offset(offset).Limit(pageSize).Find(&results).Error
-		return results, total, err
-	}
-
-	return []T{}, total, nil
-}
-
 // GetDB 获取原始的 gorm.DB 实例
 // 用法: repo.GetDB().Where("name like ?", "%jack%").Find(&users)
 func (r *BaseRepo[T]) GetDB(ctx context.Context) *gorm.DB {
+	r.DB.Where("deleted_at IS NULL")
 	return r.DB.WithContext(ctx)
+}
+
+// PaginationWithScopes 分页查询 (增强版)
+// ctx: 上下文
+// pq: 分页查询参数 @see: response.PageQuery
+// scopes: 可选的查询范围函数，例如过滤、关联预加载等
+// 返回: 分页结果, 错误
+func (r *BaseRepo[T]) PaginationWithScopes(
+	ctx context.Context,
+	pq *response.PageQuery,
+	scopes ...func(*gorm.DB) *gorm.DB,
+) (*response.PageResult[T], error) {
+
+	if pq == nil {
+		pq = &response.PageQuery{}
+	}
+	pq.Normalize()
+
+	db := r.DB.WithContext(ctx).Model(new(T))
+
+	// apply scopes
+	for _, scope := range scopes {
+		db = db.Scopes(scope)
+	}
+
+	// apply order
+	for _, o := range pq.Order {
+		if o.Desc {
+			db = db.Order(o.Field + " DESC")
+		} else {
+			db = db.Order(o.Field + " ASC")
+		}
+	}
+
+	// list
+	var list []T
+
+	// 如果不需要 count，为了计算 hasMore，我们需要多取一条
+	limit := pq.Size
+	if !pq.NeedCount {
+		limit = pq.Size + 1
+	}
+
+	offset := (pq.Page - 1) * pq.Size
+	if err := db.Offset(offset).Limit(limit).Find(&list).Error; err != nil {
+		return nil, err
+	}
+
+	// 处理 hasMore
+	hasMore := false
+	if !pq.NeedCount {
+		if len(list) > pq.Size {
+			hasMore = true
+			list = list[:pq.Size] // 截断多取的那条
+		}
+	}
+
+	// build result
+	res := &response.PageResult[T]{
+		Items:   list,
+		Page:    pq.Page,
+		Size:    pq.Size,
+		HasMore: hasMore,
+	}
+
+	// count if needed
+	if pq.NeedCount {
+		var total int64
+		if err := db.Count(&total).Error; err != nil {
+			return nil, err
+		}
+		res.Total = total
+		res.HasMore = int64(pq.Page*pq.Size) < total
+	}
+
+	return res, nil
+}
+
+// Pagination 分页查询 (方便版)
+// ctx: 上下文
+// pq: 分页查询参数 @see: response.PageQuery
+// customDB: 自定义的 gorm.DB 实例，用于添加额外的查询条件或关联预加载，只要最终能 Find(&list) 即可
+// 返回: 分页结果, 错误
+func (r *BaseRepo[T]) Pagination(
+	ctx context.Context,
+	pq *response.PageQuery,
+	customDB *gorm.DB,
+) (*response.PageResult[T], error) {
+
+	if pq == nil {
+		pq = &response.PageQuery{}
+	}
+	pq.Normalize()
+
+	// 如果 customDB 为 nil，使用 r.db
+	db := customDB
+	if db == nil {
+		db = r.DB
+	}
+
+	db = db.WithContext(ctx).Model(new(T))
+
+	// apply order
+	for _, o := range pq.Order {
+		if o.Desc {
+			db = db.Order(o.Field + " DESC")
+		} else {
+			db = db.Order(o.Field + " ASC")
+		}
+	}
+
+	// pagination list
+	limit := pq.Size
+	if !pq.NeedCount {
+		limit = pq.Size + 1
+	}
+
+	var list []T
+	offset := (pq.Page - 1) * pq.Size
+	if err := db.Offset(offset).Limit(limit).Find(&list).Error; err != nil {
+		return nil, err
+	}
+
+	hasMore := false
+	if !pq.NeedCount && len(list) > pq.Size {
+		hasMore = true
+		list = list[:pq.Size]
+	}
+
+	res := &response.PageResult[T]{
+		Items:   list,
+		Page:    pq.Page,
+		Size:    pq.Size,
+		HasMore: hasMore,
+	}
+
+	if pq.NeedCount {
+		var total int64
+		if err := db.Count(&total).Error; err != nil {
+			return nil, err
+		}
+		res.Total = total
+		res.HasMore = int64(pq.Page*pq.Size) < total
+	}
+
+	return res, nil
 }

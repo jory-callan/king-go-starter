@@ -40,7 +40,7 @@ func (h *LoginHandler) Login(c echo.Context) error {
 	// 模拟用户验证（实际应该从数据库查询并验证密码）
 	if req.Username != "admin" || req.Password != "123456" {
 		// 记录登录失败日志
-		loginLog := &LoginLog{
+		loginLog := &CoreLoginLog{
 			ID:        uuid.New().String(),
 			UserID:    "",
 			Username:  req.Username,
@@ -74,7 +74,7 @@ func (h *LoginHandler) Login(c echo.Context) error {
 	}
 
 	// 生成刷新令牌
-	refreshToken := &RefreshToken{
+	refreshToken := &CoreRefreshToken{
 		ID:        uuid.New().String(),
 		UserID:    "1",
 		Token:     uuid.New().String(),
@@ -86,7 +86,7 @@ func (h *LoginHandler) Login(c echo.Context) error {
 	}
 
 	// 记录登录成功日志
-	loginLog := &LoginLog{
+	loginLog := &CoreLoginLog{
 		ID:        uuid.New().String(),
 		UserID:    "1",
 		Username:  req.Username,
@@ -97,7 +97,7 @@ func (h *LoginHandler) Login(c echo.Context) error {
 	}
 	h.loginRepo.CreateLoginLog(c.Request().Context(), loginLog)
 
-	return response.Success(c, map[string]interface{}{
+	return response.Success[any](c, map[string]interface{}{
 		"access_token":  tokenString,
 		"refresh_token": refreshToken.Token,
 		"expires_at":    claims.ExpiresAt,
@@ -123,7 +123,7 @@ func (h *LoginHandler) Logout(c echo.Context) error {
 		}
 	}
 
-	return response.SuccessWithMsg(c, "登出成功", nil)
+	return response.SuccessWithMsg[any](c, "登出成功", nil)
 }
 
 // RefreshToken 刷新令牌
@@ -167,7 +167,7 @@ func (h *LoginHandler) RefreshToken(c echo.Context) error {
 	}
 
 	// 生成新的刷新令牌
-	newRefreshToken := &RefreshToken{
+	newRefreshToken := &CoreRefreshToken{
 		ID:        uuid.New().String(),
 		UserID:    refreshToken.UserID,
 		Token:     uuid.New().String(),
@@ -183,7 +183,7 @@ func (h *LoginHandler) RefreshToken(c echo.Context) error {
 		// 即使删除失败也继续执行
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.Success[any](c, map[string]interface{}{
 		"access_token":  tokenString,
 		"refresh_token": newRefreshToken.Token,
 		"expires_at":    claims.ExpiresAt,

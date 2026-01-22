@@ -6,8 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Permission 权限码 (api:xxx, menu:xxx)
-type Permission struct {
+// CorePermission 权限码 (api:xxx, menu:xxx)
+type CorePermission struct {
 	ID        string         `gorm:"type:varchar(32);primaryKey;comment:权限ID" json:"id"`
 	Code      string         `gorm:"type:varchar(100);uniqueIndex;not null;comment:权限码" json:"code"`
 	Name      string         `gorm:"type:varchar(50);not null;comment:权限名称" json:"name"`
@@ -21,6 +21,6 @@ type Permission struct {
 	DeletedBy string         `gorm:"type:varchar(32);comment:删除人ID" json:"deleted_by,omitempty"`
 }
 
-func (Permission) TableName() string {
-	return "sys_permission"
+func (CorePermission) TableName() string {
+	return "core_permission"
 }

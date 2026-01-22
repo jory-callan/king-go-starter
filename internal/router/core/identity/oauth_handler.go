@@ -45,13 +45,13 @@ func (h *OAuthHandler) Authorize(c echo.Context) error {
 
 	// 生成授权码
 	authCode := &OAuthCode{
-		ID:           uuid.New().String(),
-		ClientID:     client.ClientID,
-		UserID:       "1", // 模拟用户 ID
-		Code:         uuid.New().String(),
-		RedirectURI:  req.RedirectURI,
-		Scope:        req.Scope,
-		ExpiresAt:    time.Now().Add(10 * time.Minute),
+		ID:          uuid.New().String(),
+		ClientID:    client.ClientID,
+		UserID:      "1", // 模拟用户 ID
+		Code:        uuid.New().String(),
+		RedirectURI: req.RedirectURI,
+		Scope:       req.Scope,
+		ExpiresAt:   time.Now().Add(10 * time.Minute),
 	}
 
 	if err := h.oauthRepo.CreateOAuthCode(c.Request().Context(), authCode); err != nil {
@@ -147,7 +147,7 @@ func (h *OAuthHandler) GetToken(c echo.Context) error {
 	}
 
 	// 生成访问令牌和刷新令牌
-	oauthToken := &OAuthToken{
+	oauthToken := &CoreOAuthToken{
 		ID:           uuid.New().String(),
 		ClientID:     req.ClientID,
 		UserID:       userID,
@@ -162,7 +162,7 @@ func (h *OAuthHandler) GetToken(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, "生成令牌失败")
 	}
 
-	return response.Success(c, map[string]interface{}{
+	return response.Success[any](c, map[string]interface{}{
 		"access_token":  oauthToken.AccessToken,
 		"refresh_token": oauthToken.RefreshToken,
 		"token_type":    oauthToken.TokenType,
@@ -198,11 +198,11 @@ func (h *OAuthHandler) GetUserInfo(c echo.Context) error {
 
 	// 模拟用户信息
 	userInfo := map[string]interface{}{
-		"sub":   token.UserID,
-		"name":  "管理员",
-		"email": "admin@example.com",
+		"sub":                token.UserID,
+		"name":               "管理员",
+		"email":              "admin@example.com",
 		"preferred_username": "admin",
 	}
 
-	return response.Success(c, userInfo)
+	return response.Success[any](c, userInfo)
 }

@@ -1,0 +1,41 @@
+文件级编码规范
+
+model.go 文件：
+- 结构体字段使用 GORM 标签定义数据库映射
+- 包含 TableName 方法指定表名
+- 支持 GORM 软删除 gorm.DeletedAt 字段
+- JSON 标签使用 "-" 忽略敏感字段（如密码）
+
+repository.go 文件：
+- 继承 gormutil.BaseRepo[T] 泛型基类
+- 提供 NewRepository 构造函数
+- 可扩展特定业务查询方法（如 GetByUsername）
+- 依赖注入方式获取数据库连接
+
+handler.go 文件：
+- 包含 Handler 结构体封装 Repository 依赖
+- 提供 NewHandler 构造函数
+- 实现标准 CRUD 方法：Create、GetByID、List、Update、Delete
+- 使用 response.Success/Error 统一响应
+- 参数校验通过 Bind 绑定请求体到 Req 结构体
+
+req.go 文件：
+- 定义请求参数结构体
+- 使用 validate 标签进行参数校验
+- 区分 Create 和 Update 请求类型
+
+router.go 文件：
+- 提供 Register/RegisterRoutes 函数注册路由
+- 执行 AutoMigrate 自动创建表结构
+- 使用路由分组组织相关接口
+- 依赖注入方式获取 App 实例
+
+响应处理：
+- 成功响应使用 response.Success(data)
+- 错误响应使用 response.Error(c, httpCode, "message")
+- 支持自定义消息的 response.SuccessWithMsg
+
+数据库操作：
+- 使用 Context 传递上下文
+- Repository 方法接收 Context 参数
+- 支持事务操作和批量处理

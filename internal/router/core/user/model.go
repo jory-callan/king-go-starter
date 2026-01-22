@@ -6,7 +6,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type User struct {
+type CoreUser struct {
 	ID        string         `gorm:"type:varchar(32);primaryKey;comment:用户ID(UUID v7)" json:"id"`
 	Username  string         `gorm:"type:varchar(50);uniqueIndex;not null;comment:用户名" json:"username"`
 	Password  string         `gorm:"type:varchar(255);not null;comment:密码哈希" json:"-"` // 序列化时忽略
@@ -20,4 +20,8 @@ type User struct {
 	UpdatedBy string         `gorm:"type:varchar(32);comment:更新人ID" json:"updated_by"`
 	DeletedAt gorm.DeletedAt `gorm:"index;comment:删除时间" json:"deleted_at,omitempty"`
 	DeletedBy string         `gorm:"type:varchar(32);comment:删除人ID" json:"deleted_by,omitempty"`
+}
+
+func (u *CoreUser) TableName() string {
+	return "core_users"
 }

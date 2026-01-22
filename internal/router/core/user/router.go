@@ -7,6 +7,7 @@ import (
 
 func Register(app *app.App) {
 	var handler = NewHandler(app)
+	app.Db.AutoMigrate(&CoreUser{})
 
 	e := app.Server.Engine()
 	group := e.Group("/api/v1/core/users")

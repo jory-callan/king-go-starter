@@ -1,0 +1,27 @@
+King Go Starter 项目架构概览
+
+项目结构：
+- internal/router: 路由模块，按功能拆分为不同模块
+- internal/app: 应用程序核心配置和依赖注入
+- pkg/database/gormutil: GORM 数据库工具包，包含泛型 BaseRepo
+- internal/response: 统一响应格式封装
+- pkg/logx: 日志工具包
+
+路由注册模式：
+- 采用模块化路由注册，通过 Register/RegisterRoutes 函数统一注册
+- 所有路由在 internal/router/router.go 中集中注册
+- 使用 Echo 框架进行路由分组管理
+
+数据访问层模式：
+- 采用 Repository 模式，基于泛型 BaseRepo 封装
+- 包含 Model、Repository、Handler、Req 四个主要组件
+- 支持基础 CRUD 和分页查询操作
+
+响应处理模式：
+- 统一返回格式：{code, msg, data}
+- 提供 Success、Error 等便捷响应函数
+- HTTP 状态码统一使用 200，错误通过 code 字段标识
+
+数据库迁移：
+- 在路由注册时自动执行 AutoMigrate 进行表结构同步
+- 使用 GORM 模型定义表结构和关系

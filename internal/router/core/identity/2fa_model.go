@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-// TwoFA 2FA 配置模型
-type TwoFA struct {
+// CoreTwoFA 2FA 配置模型
+type CoreTwoFA struct {
 	ID        string    `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	UserID    string    `gorm:"type:varchar(36);uniqueIndex" json:"user_id"`
 	Secret    string    `gorm:"type:varchar(255)" json:"secret"`
@@ -15,12 +15,12 @@ type TwoFA struct {
 }
 
 // TableName 指定表名
-func (TwoFA) TableName() string {
+func (CoreTwoFA) TableName() string {
 	return "core_twofa"
 }
 
-// TwoFALog 2FA 验证日志模型
-type TwoFALog struct {
+// CoreTwoFALog 2FA 验证日志模型
+type CoreTwoFALog struct {
 	ID        string    `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	UserID    string    `gorm:"type:varchar(36);index" json:"user_id"`
 	Status    int       `gorm:"type:tinyint;default:0" json:"status"` // 0: 失败, 1: 成功
@@ -31,6 +31,6 @@ type TwoFALog struct {
 }
 
 // TableName 指定表名
-func (TwoFALog) TableName() string {
+func (CoreTwoFALog) TableName() string {
 	return "core_twofa_logs"
 }

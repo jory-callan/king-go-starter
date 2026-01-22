@@ -1,3 +1,4 @@
+// pkg/response/response.go
 package response
 
 import (
@@ -6,10 +7,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type Response struct {
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
-	Data interface{} `json:"data"`
+type ApiResponse[T any] struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data T      `json:"data"`
 }
 
 const (
@@ -17,16 +18,16 @@ const (
 	CodeError   = 500
 )
 
-func Success(c echo.Context, data interface{}) error {
-	return c.JSON(http.StatusOK, Response{
+func Success[T any](c echo.Context, data T) error {
+	return c.JSON(http.StatusOK, ApiResponse[T]{
 		Code: CodeSuccess,
 		Msg:  "success",
 		Data: data,
 	})
 }
 
-func SuccessWithMsg(c echo.Context, msg string, data interface{}) error {
-	return c.JSON(http.StatusOK, Response{
+func SuccessWithMsg[T any](c echo.Context, msg string, data T) error {
+	return c.JSON(http.StatusOK, ApiResponse[T]{
 		Code: CodeSuccess,
 		Msg:  msg,
 		Data: data,
@@ -34,17 +35,24 @@ func SuccessWithMsg(c echo.Context, msg string, data interface{}) error {
 }
 
 func Error(c echo.Context, code int, msg string) error {
-	return c.JSON(http.StatusOK, Response{
+	return c.JSON(http.StatusOK, ApiResponse[any]{
 		Code: code,
 		Msg:  msg,
 		Data: nil,
 	})
 }
 
-func ErrorWithHTTPStatus(c echo.Context, httpStatus int, code int, msg string) error {
-	return c.JSON(httpStatus, Response{
+func ErrorWithHTTPStatus(c echo.Context, httpStatus, code int, msg string) error {
+	return c.JSON(httpStatus, ApiResponse[any]{
 		Code: code,
 		Msg:  msg,
 		Data: nil,
 	})
+}
+
+func OK[T any](c echo.Context, data T) error {
+	return Success[any](c, data)
+}
+func Fail(c echo.Context, code int, msg string) error {
+	return Error(c, code, msg)
 }

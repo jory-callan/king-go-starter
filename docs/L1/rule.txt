@@ -1,0 +1,22 @@
+业务开发规则
+internal/app  全局基础设施,后面任何新增基础设施都要包含在这里，目前包括config db jwt server
+
+gorm规则 按照 功能分文件夹。handler -> repo 扁平化两层
+
+
+项目结构概述
+- cmd/: 命令行入口，包含server启动命令
+- config/: 配置文件和配置管理
+- docs/: 文档目录
+- internal/
+  - app/: 基础设施代码，提供全局依赖管理
+  - common/: 通用常量
+  - middleware/: 中间件
+  - response/: 统一响应格式
+  - router/: 路由模块，按业务划分
+- pkg/
+  - database/gormutil/: 泛型工具，提供base_repo和base_service
+  - goutils/: 通用工具
+  - http/: HTTP服务相关
+  - jwt/: JWT认证
+  - logx/: 日志工具

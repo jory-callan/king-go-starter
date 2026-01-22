@@ -9,27 +9,27 @@ import (
 
 // LoginRepo 登录相关的数据访问层
 type LoginRepo struct {
-	*gormutil.BaseRepo[LoginLog]
+	*gormutil.BaseRepo[CoreLoginLog]
 }
 
 // NewLoginRepo 创建登录数据访问层实例
 func NewLoginRepo(db *gorm.DB) *LoginRepo {
-	return &LoginRepo{BaseRepo: gormutil.NewBaseRepo[LoginLog](db)}
+	return &LoginRepo{BaseRepo: gormutil.NewBaseRepo[CoreLoginLog](db)}
 }
 
 // CreateLoginLog 创建登录日志
-func (r *LoginRepo) CreateLoginLog(ctx context.Context, log *LoginLog) error {
+func (r *LoginRepo) CreateLoginLog(ctx context.Context, log *CoreLoginLog) error {
 	return r.Create(ctx, log)
 }
 
 // CreateRefreshToken 创建刷新令牌
-func (r *LoginRepo) CreateRefreshToken(ctx context.Context, token *RefreshToken) error {
+func (r *LoginRepo) CreateRefreshToken(ctx context.Context, token *CoreRefreshToken) error {
 	return r.GetDB(ctx).Create(token).Error
 }
 
 // GetRefreshTokenByToken 根据令牌获取刷新令牌
-func (r *LoginRepo) GetRefreshTokenByToken(ctx context.Context, token string) (*RefreshToken, error) {
-	var refreshToken RefreshToken
+func (r *LoginRepo) GetRefreshTokenByToken(ctx context.Context, token string) (*CoreRefreshToken, error) {
+	var refreshToken CoreRefreshToken
 	err := r.GetDB(ctx).Where("token = ?", token).First(&refreshToken).Error
 	if err != nil {
 		return nil, err
@@ -39,10 +39,10 @@ func (r *LoginRepo) GetRefreshTokenByToken(ctx context.Context, token string) (*
 
 // DeleteRefreshToken 删除刷新令牌
 func (r *LoginRepo) DeleteRefreshToken(ctx context.Context, token string) error {
-	return r.GetDB(ctx).Where("token = ?", token).Delete(&RefreshToken{}).Error
+	return r.GetDB(ctx).Where("token = ?", token).Delete(&CoreRefreshToken{}).Error
 }
 
 // DeleteExpiredRefreshTokens 删除过期的刷新令牌
 func (r *LoginRepo) DeleteExpiredRefreshTokens(ctx context.Context) error {
-	return r.GetDB(ctx).Where("expires_at < NOW()").Delete(&RefreshToken{}).Error
+	return r.GetDB(ctx).Where("expires_at < NOW()").Delete(&CoreRefreshToken{}).Error
 }

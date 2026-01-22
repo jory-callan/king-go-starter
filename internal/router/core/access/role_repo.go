@@ -8,11 +8,11 @@ import (
 )
 
 type RoleRepo struct {
-	*gormutil.BaseRepo[Role]
+	*gormutil.BaseRepo[CoreRole]
 }
 
 func NewRoleRepo(db *gorm.DB) *RoleRepo {
-	return &RoleRepo{BaseRepo: gormutil.NewBaseRepo[Role](db)}
+	return &RoleRepo{BaseRepo: gormutil.NewBaseRepo[CoreRole](db)}
 }
 
 // AssignMenus 分配菜单给角色
@@ -22,15 +22,15 @@ func (r *RoleRepo) AssignMenus(ctx context.Context, roleID string, menuIDs []str
 	// 开启事务
 	return db.Transaction(func(tx *gorm.DB) error {
 		// 1. 删除旧关联
-		if err := tx.Where("role_id = ?", roleID).Delete(&RoleMenuRelation{}).Error; err != nil {
+		if err := tx.Where("role_id = ?", roleID).Delete(&CoreRoleMenu{}).Error; err != nil {
 			return err
 		}
 
 		// 2. 批量插入新关联
 		if len(menuIDs) > 0 {
-			var relations []RoleMenuRelation
+			var relations []CoreRoleMenu
 			for _, menuID := range menuIDs {
-				relations = append(relations, RoleMenuRelation{
+				relations = append(relations, CoreRoleMenu{
 					RoleID: roleID,
 					MenuID: menuID,
 				})
@@ -47,13 +47,13 @@ func (r *RoleRepo) AssignMenus(ctx context.Context, roleID string, menuIDs []str
 func (r *RoleRepo) AssignPermissions(ctx context.Context, roleID string, permissionIDs []string) error {
 	db := r.GetDB(ctx)
 	return db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("role_id = ?", roleID).Delete(&RolePermissionRelation{}).Error; err != nil {
+		if err := tx.Where("role_id = ?", roleID).Delete(&CoreRolePermission{}).Error; err != nil {
 			return err
 		}
 		if len(permissionIDs) > 0 {
-			var relations []RolePermissionRelation
+			var relations []CoreRolePermission
 			for _, pid := range permissionIDs {
-				relations = append(relations, RolePermissionRelation{
+				relations = append(relations, CoreRolePermission{
 					RoleID:       roleID,
 					PermissionID: pid,
 				})
@@ -67,13 +67,13 @@ func (r *RoleRepo) AssignPermissions(ctx context.Context, roleID string, permiss
 // GetRoleMenus 获取角色拥有的菜单ID列表
 func (r *RoleRepo) GetRoleMenus(ctx context.Context, roleID string) ([]string, error) {
 	var ids []string
-	err := r.GetDB(ctx).Model(&RoleMenuRelation{}).Where("role_id = ?", roleID).Pluck("menu_id", &ids).Error
+	err := r.GetDB(ctx).Model(&CoreRoleMenu{}).Where("role_id = ?", roleID).Pluck("menu_id", &ids).Error
 	return ids, err
 }
 
 // GetRolePermissions 获取角色拥有的权限ID列表
 func (r *RoleRepo) GetRolePermissions(ctx context.Context, roleID string) ([]string, error) {
 	var ids []string
-	err := r.GetDB(ctx).Model(&RolePermissionRelation{}).Where("role_id = ?", roleID).Pluck("permission_id", &ids).Error
+	err := r.GetDB(ctx).Model(&CoreRolePermission{}).Where("role_id = ?", roleID).Pluck("permission_id", &ids).Error
 	return ids, err
 }

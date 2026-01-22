@@ -1,0 +1,1360 @@
+openapi: 3.0.3
+info:
+  title: King Go Starter API
+  description: King Go Starter 是一个基于 Go 语言的后端项目模板，提供了用户管理、角色权限、菜单系统等基础功能。
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+paths:
+  # Hello 模块
+  /api/v1/hello/echo:
+    get:
+      summary: 简单回显测试
+      description: 返回 "hello world" 字符串，用于基本功能测试
+      responses:
+        '200':
+          description: 成功返回 hello world
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "hello world"
+  /api/v1/hello/error:
+    get:
+      summary: 错误测试 - HTTP错误
+      description: 返回一个HTTP错误，用于测试错误处理
+      responses:
+        '400':
+          description: 返回HTTP错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/hello/error2:
+    get:
+      summary: 错误测试 - 普通错误
+      description: 返回一个普通错误，用于测试错误处理
+      responses:
+        '500':
+          description: 返回内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/hello/panic:
+    get:
+      summary: Panic测试
+      description: 触发panic，用于测试panic恢复机制
+      responses:
+        '500':
+          description: 返回内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # 用户模块
+  /api/v1/core/users:
+    post:
+      summary: 创建用户
+      description: 创建一个新的用户
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserReq'
+      responses:
+        '200':
+          description: 用户创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: 获取用户列表
+      description: 分页获取用户列表
+      parameters:
+        - name: page
+          in: query
+          description: 页码
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: 每页数量
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: 成功返回用户列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  code:
+                    type: integer
+                    example: 200
+                  message:
+                    type: string
+                    example: "success"
+                  data:
+                    type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/CoreUser'
+                      total:
+                        type: integer
+                        example: 100
+                      page:
+                        type: integer
+                        example: 1
+                      size:
+                        type: integer
+                        example: 10
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/v1/core/users/{id}:
+    get:
+      summary: 获取用户详情
+      description: 根据ID获取用户详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 用户ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回用户详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: ID不能为空
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: 更新用户
+      description: 根据ID更新用户信息
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 用户ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateUserReq'
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: 删除用户
+      description: 根据ID删除用户（软删除）
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 用户ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # 角色模块
+  /api/core/roles:
+    post:
+      summary: 创建角色
+      description: 创建一个新的角色
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: 角色编码
+                  example: "admin"
+                name:
+                  type: string
+                  description: 角色名称
+                  example: "管理员"
+                status:
+                  type: integer
+                  description: 状态 (1:正常 0:禁用)
+                  example: 1
+                remark:
+                  type: string
+                  description: 备注
+                  example: "系统管理员角色"
+      responses:
+        '200':
+          description: 角色创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: 获取角色列表
+      description: 分页获取角色列表
+      parameters:
+        - name: page
+          in: query
+          description: 页码
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: 每页数量
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: code
+          in: query
+          description: 角色编码过滤
+          required: false
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: 角色名称过滤
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 状态过滤
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功返回角色列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/roles/{id}:
+    get:
+      summary: 获取角色详情
+      description: 根据ID获取角色详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 角色ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回角色详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: ID不能为空
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 角色不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: 更新角色
+      description: 根据ID更新角色信息
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 角色ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 角色名称
+                  example: "超级管理员"
+                status:
+                  type: integer
+                  description: 状态 (1:正常 0:禁用)
+                  example: 1
+                remark:
+                  type: string
+                  description: 备注
+                  example: "系统最高权限角色"
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: 删除角色
+      description: 根据ID删除角色（软删除）
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 角色ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/roles/{id}/menus:
+    put:
+      summary: 更新角色菜单
+      description: 更新角色拥有的菜单权限
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 角色ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                menu_ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["menu1", "menu2", "menu3"]
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/roles/{id}/permissions:
+    put:
+      summary: 更新角色权限
+      description: 更新角色拥有的权限
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 角色ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                permission_ids:
+                  type: array
+                  items:
+                    type: string
+                  example: ["perm1", "perm2", "perm3"]
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # 菜单模块
+  /api/core/menus:
+    post:
+      summary: 创建菜单
+      description: 创建一个新的菜单项
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parent_id:
+                  type: string
+                  description: 父级菜单ID
+                  example: "parent-menu-id"
+                name:
+                  type: string
+                  description: 菜单名称
+                  example: "用户管理"
+                path:
+                  type: string
+                  description: 菜单路径
+                  example: "/users"
+                icon:
+                  type: string
+                  description: 图标
+                  example: "user-icon"
+                sort:
+                  type: integer
+                  description: 排序
+                  example: 1
+                status:
+                  type: integer
+                  description: 状态 (1:正常 0:禁用)
+                  example: 1
+      responses:
+        '200':
+          description: 菜单创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: 获取菜单列表
+      description: 分页获取菜单列表
+      parameters:
+        - name: page
+          in: query
+          description: 页码
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: 每页数量
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: parent_id
+          in: query
+          description: 父级菜单ID过滤
+          required: false
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: 菜单名称过滤
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: 状态过滤
+          required: false
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: 成功返回菜单列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/menus/{id}:
+    get:
+      summary: 获取菜单详情
+      description: 根据ID获取菜单详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 菜单ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回菜单详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: ID不能为空
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 菜单不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: 更新菜单
+      description: 根据ID更新菜单信息
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 菜单ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                parent_id:
+                  type: string
+                  description: 父级菜单ID
+                  example: "parent-menu-id"
+                name:
+                  type: string
+                  description: 菜单名称
+                  example: "用户管理"
+                path:
+                  type: string
+                  description: 菜单路径
+                  example: "/users"
+                icon:
+                  type: string
+                  description: 图标
+                  example: "user-icon"
+                sort:
+                  type: integer
+                  description: 排序
+                  example: 1
+                status:
+                  type: integer
+                  description: 状态 (1:正常 0:禁用)
+                  example: 1
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: 删除菜单
+      description: 根据ID删除菜单（软删除）
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 菜单ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # 权限模块
+  /api/core/permissions:
+    post:
+      summary: 创建权限
+      description: 创建一个新的权限
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: 权限编码
+                  example: "user:create"
+                name:
+                  type: string
+                  description: 权限名称
+                  example: "创建用户"
+                type:
+                  type: string
+                  description: 权限类型
+                  example: "api"
+                remark:
+                  type: string
+                  description: 备注
+                  example: "允许创建新用户"
+      responses:
+        '200':
+          description: 权限创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: 获取权限列表
+      description: 分页获取权限列表
+      parameters:
+        - name: page
+          in: query
+          description: 页码
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: page_size
+          in: query
+          description: 每页数量
+          required: false
+          schema:
+            type: integer
+            default: 10
+        - name: code
+          in: query
+          description: 权限编码过滤
+          required: false
+          schema:
+            type: string
+        - name: name
+          in: query
+          description: 权限名称过滤
+          required: false
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: 权限类型过滤
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回权限列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/permissions/{id}:
+    get:
+      summary: 获取权限详情
+      description: 根据ID获取权限详情
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 权限ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 成功返回权限详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: ID不能为空
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: 权限不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      summary: 更新权限
+      description: 根据ID更新权限信息
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 权限ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: 权限名称
+                  example: "修改用户"
+                type:
+                  type: string
+                  description: 权限类型
+                  example: "api"
+                remark:
+                  type: string
+                  description: 备注
+                  example: "允许修改用户信息"
+      responses:
+        '200':
+          description: 更新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: 删除权限
+      description: 根据ID删除权限（软删除）
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: 权限ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 删除成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '500':
+          description: 内部服务器错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # 认证模块
+  /api/core/auth/login:
+    post:
+      summary: 用户登录
+      description: 用户登录获取访问令牌
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  description: 用户名
+                  example: "admin"
+                password:
+                  type: string
+                  description: 密码
+                  example: "123456"
+                captcha:
+                  type: string
+                  description: 验证码（可选）
+                  example: "abc123"
+                remember:
+                  type: boolean
+                  description: 是否记住登录状态
+                  example: false
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 认证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/auth/logout:
+    post:
+      summary: 用户登出
+      description: 用户登出并使令牌失效
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  description: 刷新令牌（可选）
+                  example: "refresh-token-here"
+      responses:
+        '200':
+          description: 登出成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/auth/refresh:
+    post:
+      summary: 刷新令牌
+      description: 使用刷新令牌获取新的访问令牌
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                refresh_token:
+                  type: string
+                  description: 刷新令牌
+                  example: "refresh-token-here"
+      responses:
+        '200':
+          description: 令牌刷新成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 令牌无效或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # OAuth 模块
+  /api/core/oauth/authorize:
+    get:
+      summary: OAuth 授权
+      description: OAuth 授权请求
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          description: 客户端ID
+          schema:
+            type: string
+        - name: redirect_uri
+          in: query
+          required: true
+          description: 回调地址
+          schema:
+            type: string
+        - name: response_type
+          in: query
+          required: true
+          description: 响应类型
+          schema:
+            type: string
+        - name: scope
+          in: query
+          required: false
+          description: 授权范围
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 授权成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/oauth/token:
+    post:
+      summary: 获取 OAuth 令牌
+      description: 通过授权码获取访问令牌
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  description: 授权类型
+                  example: "authorization_code"
+                client_id:
+                  type: string
+                  description: 客户端ID
+                  example: "client-id"
+                client_secret:
+                  type: string
+                  description: 客户端密钥
+                  example: "client-secret"
+                code:
+                  type: string
+                  description: 授权码
+                  example: "auth-code"
+                redirect_uri:
+                  type: string
+                  description: 回调地址
+                  example: "http://localhost/callback"
+      responses:
+        '200':
+          description: 令牌获取成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 认证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/oauth/userinfo:
+    get:
+      summary: 获取用户信息
+      description: 通过访问令牌获取用户信息
+      responses:
+        '200':
+          description: 成功返回用户信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: 未认证或令牌无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  # 两步验证模块
+  /api/core/2fa/enable:
+    post:
+      summary: 启用两步验证
+      description: 为当前用户启用两步验证
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                secret:
+                  type: string
+                  description: 秘钥
+                  example: "secret-key"
+                token:
+                  type: string
+                  description: 验证码
+                  example: "123456"
+      responses:
+        '200':
+          description: 两步验证启用成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 未认证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/2fa/verify:
+    post:
+      summary: 验证两步验证码
+      description: 验证提供的两步验证码
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: 验证码
+                  example: "123456"
+      responses:
+        '200':
+          description: 验证成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: 请求参数错误
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: 验证失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/core/2fa/disable:
+    post:
+      summary: 禁用两步验证
+      description: 禁用当前用户的两步验证
+      responses:
+        '200':
+          description: 两步验证禁用成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          description: 未认证
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        message:
+          type: string
+          example: "success"
+        data:
+          type: object
+          description: 响应数据
+    Error:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 400
+        message:
+          type: string
+          example: "error message"
+        data:
+          type: object
+          nullable: true
+    CreateUserReq:
+      type: object
+      properties:
+        username:
+          type: string
+          description: 用户名
+          example: "john_doe"
+        password:
+          type: string
+          description: 密码
+          example: "password123"
+        nickname:
+          type: string
+          description: 昵称
+          example: "John"
+        email:
+          type: string
+          description: 邮箱
+          example: "john@example.com"
+        phone:
+          type: string
+          description: 手机号
+          example: "13800138000"
+    UpdateUserReq:
+      type: object
+      properties:
+        nickname:
+          type: string
+          description: 昵称
+          example: "John"
+        email:
+          type: string
+          description: 邮箱
+          example: "john@example.com"
+        phone:
+          type: string
+          description: 手机号
+          example: "13800138000"
+    CoreUser:
+      type: object
+      properties:
+        id:
+          type: string
+          description: 用户ID
+          example: "user-uuid"
+        username:
+          type: string
+          description: 用户名
+          example: "john_doe"
+        nickname:
+          type: string
+          description: 昵称
+          example: "John"
+        status:
+          type: integer
+          description: 状态 (1:正常 0:禁用)
+          example: 1
+        email:
+          type: string
+          description: 邮箱
+          example: "john@example.com"
+        phone:
+          type: string
+          description: 手机号
+          example: "13800138000"
+        created_at:
+          type: string
+          format: date-time
+          description: 创建时间
+          example: "2023-01-01T00:00:00Z"
+        created_by:
+          type: string
+          description: 创建人ID
+          example: "admin"
+        updated_at:
+          type: string
+          format: date-time
+          description: 更新时间
+          example: "2023-01-01T00:00:00Z"
+        updated_by:
+          type: string
+          description: 更新人ID
+          example: "admin"
+        deleted_at:
+          type: string
+          format: date-time
+          description: 删除时间（如果已删除）
+          example: "2023-01-01T00:00:00Z"
+        deleted_by:
+          type: string
+          description: 删除人ID
+          example: "admin"

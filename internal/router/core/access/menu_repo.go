@@ -7,9 +7,9 @@ import (
 )
 
 type MenuRepo struct {
-	*gormutil.BaseRepo[Menu]
+	*gormutil.BaseRepo[CoreMenu]
 }
 
 func NewMenuRepo(db *gorm.DB) *MenuRepo {
-	return &MenuRepo{BaseRepo: gormutil.NewBaseRepo[Menu](db)}
+	return &MenuRepo{BaseRepo: gormutil.NewBaseRepo[CoreMenu](db)}
 }

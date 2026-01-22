@@ -7,9 +7,9 @@ import (
 )
 
 type PermissionRepo struct {
-	*gormutil.BaseRepo[Permission]
+	*gormutil.BaseRepo[CorePermission]
 }
 
 func NewPermissionRepo(db *gorm.DB) *PermissionRepo {
-	return &PermissionRepo{BaseRepo: gormutil.NewBaseRepo[Permission](db)}
+	return &PermissionRepo{BaseRepo: gormutil.NewBaseRepo[CorePermission](db)}
 }

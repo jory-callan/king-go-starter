@@ -6,7 +6,6 @@ import (
 	"king-starter/internal/app"
 	"king-starter/internal/response"
 	"net/http"
-	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"golang.org/x/crypto/bcrypt"
@@ -28,8 +27,6 @@ func (h *Handler) Create(c echo.Context) error {
 		return response.Error(c, http.StatusBadRequest, "请求参数错误")
 	}
 
-	// TODO: 加入参数校验逻辑，如使用 go-playground/validate
-
 	// 模拟从 Context 中获取当前操作人 ID (后续中间件实现)
 	operatorID := "system-admin"
 
@@ -45,7 +42,7 @@ func (h *Handler) Create(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, fmt.Sprintf("密码加密失败: %v", err))
 	}
 
-	user := &User{
+	user := &CoreUser{
 		Username:  req.Username,
 		Password:  string(hashedBytes),
 		Nickname:  req.Nickname,
@@ -60,7 +57,7 @@ func (h *Handler) Create(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, err.Error())
 	}
 
-	return response.Success(c, user)
+	return response.Success[any](c, user)
 }
 
 // GetByID 获取用户详情
@@ -77,43 +74,31 @@ func (h *Handler) GetByID(c echo.Context) error {
 
 	// 隐藏密码哈希
 	user.Password = ""
-	return response.Success(c, user)
+	return response.Success[any](c, user)
 }
 
 // List 用户列表
 func (h *Handler) List(c echo.Context) error {
-	page, _ := strconv.Atoi(c.QueryParam("page"))
-	pageSize, _ := strconv.Atoi(c.QueryParam("page_size"))
-
-	if page <= 0 {
-		page = 1
-	}
-	if pageSize <= 0 {
-		pageSize = 10
+	var pq response.PageQuery
+	if err := c.Bind(&pq); err != nil {
+		return response.Error(c, http.StatusBadRequest, "请求参数错误")
 	}
 
-	var users []*User
-	var total int64
+	// 确保 NeedCount 为 true 以返回总数
+	pq.NeedCount = true
 
-	db := h.repo.GetDB(c.Request().Context())
-
-	// 计算总数
-	if err := db.Model(&User{}).Count(&total).Error; err != nil {
+	// 使用 BaseRepo 的分页方法
+	result, err := h.repo.PaginationWithScopes(c.Request().Context(), &pq)
+	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "查询失败")
 	}
 
-	// 分页查询
-	offset := (page - 1) * pageSize
-	if err := db.Offset(offset).Limit(pageSize).Find(&users).Error; err != nil {
-		return response.Error(c, http.StatusInternalServerError, "查询失败")
+	// 隐藏密码哈希
+	for _, user := range result.Items {
+		user.Password = ""
 	}
 
-	return response.Success(c, map[string]interface{}{
-		"list":  users,
-		"total": total,
-		"page":  page,
-		"size":  pageSize,
-	})
+	return response.SuccessPage[CoreUser](c, *result)
 }
 
 // Update 更新用户
@@ -142,11 +127,11 @@ func (h *Handler) Update(c echo.Context) error {
 		"updated_by": operatorID,
 	}
 
-	if err := h.repo.GetDB(c.Request().Context()).Model(&User{}).Where("id = ?", id).Updates(updates).Error; err != nil {
+	if err := h.repo.GetDB(c.Request().Context()).Model(&CoreUser{}).Where("id = ?", id).Updates(updates).Error; err != nil {
 		return response.Error(c, http.StatusInternalServerError, err.Error())
 	}
 
-	return response.SuccessWithMsg(c, "更新成功", nil)
+	return response.SuccessWithMsg[any](c, "更新成功", nil)
 }
 
 // Delete 删除用户
@@ -155,12 +140,12 @@ func (h *Handler) Delete(c echo.Context) error {
 	operatorID := "system-admin" // TODO: 从中间件获取
 
 	// GORM 的软删除默认只更新 deleted_at，我们这里手动处理 deleted_by
-	if err := h.repo.GetDB(c.Request().Context()).Model(&User{}).Where("id = ?", id).Updates(map[string]interface{}{
+	if err := h.repo.GetDB(c.Request().Context()).Model(&CoreUser{}).Where("id = ?", id).Updates(map[string]interface{}{
 		"deleted_at": gorm.Expr("NOW()"), // 或者使用 time.Now()
 		"deleted_by": operatorID,
 	}).Error; err != nil {
 		return response.Error(c, http.StatusInternalServerError, err.Error())
 	}
 
-	return response.SuccessWithMsg(c, "删除成功", nil)
+	return response.SuccessWithMsg[any](c, "删除成功", nil)
 }

@@ -1,0 +1,27 @@
+模块开发规范
+
+Core 模块分类：
+- access: 权限管理模块（角色、菜单、权限）
+- identity: 身份认证模块（登录、OAuth、2FA）
+- user: 用户管理模块（用户基础信息）
+
+模块内部结构：
+- 每个模块包含 model.go（数据模型）、repository.go（数据访问）、handler.go（业务逻辑）、req.go（请求结构）和 router.go（路由注册）
+- 模型使用 GORM 标签定义表结构，支持软删除
+- Repository 继承 BaseRepo 并可扩展特定业务方法
+- Handler 实现具体的业务逻辑和 HTTP 接口
+
+路由设计规范：
+- API 路径遵循 RESTful 设计：GET /api/core/资源名, POST /api/core/资源名, PUT /api/core/资源名/:id, DELETE /api/core/资源名/:id
+- 使用路由分组管理相关接口
+- 模块间通过 Repository 依赖注入实现解耦
+
+认证与授权：
+- identity 模块提供登录、OAuth、双因子认证等功能
+- 支持 Token 刷新机制
+- 后续需通过中间件实现操作人身份获取
+
+数据模型约定：
+- 主键使用 string 类型，注释说明为 UUID v7
+- 包含 created_at、updated_at、deleted_at 等审计字段
+- 使用 created_by、updated_by、deleted_by 追踪操作人

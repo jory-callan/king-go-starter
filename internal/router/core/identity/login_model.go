@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-// LoginLog 登录日志模型
-type LoginLog struct {
+// CoreLoginLog 登录日志模型
+type CoreLoginLog struct {
 	ID        string    `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	UserID    string    `gorm:"type:varchar(36);index" json:"user_id"`
 	Username  string    `gorm:"type:varchar(50)" json:"username"`
@@ -17,12 +17,12 @@ type LoginLog struct {
 }
 
 // TableName 指定表名
-func (LoginLog) TableName() string {
+func (CoreLoginLog) TableName() string {
 	return "core_login_logs"
 }
 
-// RefreshToken 刷新令牌模型
-type RefreshToken struct {
+// CoreRefreshToken 刷新令牌模型
+type CoreRefreshToken struct {
 	ID        string    `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	UserID    string    `gorm:"type:varchar(36);index" json:"user_id"`
 	Token     string    `gorm:"type:varchar(255);uniqueIndex" json:"token"`
@@ -32,6 +32,6 @@ type RefreshToken struct {
 }
 
 // TableName 指定表名
-func (RefreshToken) TableName() string {
+func (CoreRefreshToken) TableName() string {
 	return "core_refresh_tokens"
 }

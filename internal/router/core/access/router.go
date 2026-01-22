@@ -12,6 +12,14 @@ func RegisterRoutes(app *app.App) {
 	var menuHandler = NewMenuHandler(menuRepo)
 	var permHandler = NewPermissionHandler(permissionRepo)
 
+	app.Db.AutoMigrate(
+		&CoreRole{},
+		&CoreMenu{},
+		&CorePermission{},
+		&CoreRoleMenu{},
+		&CoreRolePermission{},
+	)
+
 	e := app.Server.Engine()
 
 	// 角色路由

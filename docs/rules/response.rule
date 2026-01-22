@@ -1,0 +1,17 @@
+response rules
+使用标准化的API响应为Echo框架封装通用响应实用程序。
+核心功能
+`Success[T any]（c echo.Context，data T）`-返回带有数据的成功响应
+`SuccessWithMsg[T any]（c echo.Context，msg string，data T）`-自定义消息成功
+`Error（c echo.Context，代码int，消息字符串）`-返回错误响应
+`ErrorWithHTTPStatus（c echo.Context，httpStatus，代码int，消息字符串）`-HTTP状态错误
+通用类型
+使用泛型[T any]进行类型安全的数据响应
+带有Code、Msg和Data字段的`ApiResponse[T]结构
+分页
+“PageQuery”用于分页参数（页面、大小、所需计数、顺序）
+“PageResult[T]”用于分页响应
+使用环境
+在Echo路由处理程序中使用
+标准化代码：代码成功=200，代码错误=500
+一致的JSON响应格式

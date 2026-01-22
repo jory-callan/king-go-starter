@@ -57,7 +57,7 @@ func (h *TwoFAHandler) EnableTwoFA(c echo.Context) error {
 	}
 	if !valid {
 		// 记录验证失败日志
-		log := &TwoFALog{
+		log := &CoreTwoFALog{
 			ID:        uuid.New().String(),
 			UserID:    req.UserID,
 			Status:    0,
@@ -72,7 +72,7 @@ func (h *TwoFAHandler) EnableTwoFA(c echo.Context) error {
 
 	// 保存 2FA 配置
 	if existingTwoFA == nil {
-		twoFA := &TwoFA{
+		twoFA := &CoreTwoFA{
 			ID:     uuid.New().String(),
 			UserID: req.UserID,
 			Secret: secret,
@@ -89,7 +89,7 @@ func (h *TwoFAHandler) EnableTwoFA(c echo.Context) error {
 	}
 
 	// 记录验证成功日志
-	log := &TwoFALog{
+	log := &CoreTwoFALog{
 		ID:        uuid.New().String(),
 		UserID:    req.UserID,
 		Status:    1,
@@ -99,7 +99,7 @@ func (h *TwoFAHandler) EnableTwoFA(c echo.Context) error {
 	}
 	h.twoFARepo.CreateTwoFALog(c.Request().Context(), log)
 
-	return response.SuccessWithMsg(c, "启用 2FA 成功", nil)
+	return response.SuccessWithMsg[any](c, "启用 2FA 成功", nil)
 }
 
 // VerifyTwoFA 验证 2FA
@@ -130,7 +130,7 @@ func (h *TwoFAHandler) VerifyTwoFA(c echo.Context) error {
 	}
 	if !valid {
 		// 记录验证失败日志
-		log := &TwoFALog{
+		log := &CoreTwoFALog{
 			ID:        uuid.New().String(),
 			UserID:    req.UserID,
 			Status:    0,
@@ -144,7 +144,7 @@ func (h *TwoFAHandler) VerifyTwoFA(c echo.Context) error {
 	}
 
 	// 记录验证成功日志
-	log := &TwoFALog{
+	log := &CoreTwoFALog{
 		ID:        uuid.New().String(),
 		UserID:    req.UserID,
 		Status:    1,
@@ -154,7 +154,7 @@ func (h *TwoFAHandler) VerifyTwoFA(c echo.Context) error {
 	}
 	h.twoFARepo.CreateTwoFALog(c.Request().Context(), log)
 
-	return response.SuccessWithMsg(c, "验证成功", nil)
+	return response.SuccessWithMsg[any](c, "验证成功", nil)
 }
 
 // DisableTwoFA 禁用 2FA
@@ -180,7 +180,7 @@ func (h *TwoFAHandler) DisableTwoFA(c echo.Context) error {
 	}
 	if !valid {
 		// 记录验证失败日志
-		log := &TwoFALog{
+		log := &CoreTwoFALog{
 			ID:        uuid.New().String(),
 			UserID:    req.UserID,
 			Status:    0,
@@ -200,7 +200,7 @@ func (h *TwoFAHandler) DisableTwoFA(c echo.Context) error {
 	}
 
 	// 记录验证成功日志
-	log := &TwoFALog{
+	log := &CoreTwoFALog{
 		ID:        uuid.New().String(),
 		UserID:    req.UserID,
 		Status:    1,
@@ -210,5 +210,5 @@ func (h *TwoFAHandler) DisableTwoFA(c echo.Context) error {
 	}
 	h.twoFARepo.CreateTwoFALog(c.Request().Context(), log)
 
-	return response.SuccessWithMsg(c, "禁用 2FA 成功", nil)
+	return response.SuccessWithMsg[any](c, "禁用 2FA 成功", nil)
 }

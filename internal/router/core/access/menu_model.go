@@ -6,8 +6,8 @@ import (
 	"gorm.io/gorm"
 )
 
-// Menu 菜单资源
-type Menu struct {
+// CoreMenu 菜单资源
+type CoreMenu struct {
 	ID        string         `gorm:"type:varchar(32);primaryKey;comment:菜单ID" json:"id"`
 	ParentID  string         `gorm:"type:varchar(32);default:0;comment:父级菜单ID" json:"parent_id"`
 	Name      string         `gorm:"type:varchar(50);not null;comment:菜单名称" json:"name"`
@@ -23,6 +23,6 @@ type Menu struct {
 	DeletedBy string         `gorm:"type:varchar(32);comment:删除人ID" json:"deleted_by,omitempty"`
 }
 
-func (Menu) TableName() string {
-	return "sys_menu"
+func (CoreMenu) TableName() string {
+	return "core_menu"
 }

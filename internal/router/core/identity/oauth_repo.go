@@ -9,17 +9,17 @@ import (
 
 // OAuthRepo OAuth 相关的数据访问层
 type OAuthRepo struct {
-	*gormutil.BaseRepo[OAuthClient]
+	*gormutil.BaseRepo[CoreOAuthClient]
 }
 
 // NewOAuthRepo 创建 OAuth 数据访问层实例
 func NewOAuthRepo(db *gorm.DB) *OAuthRepo {
-	return &OAuthRepo{BaseRepo: gormutil.NewBaseRepo[OAuthClient](db)}
+	return &OAuthRepo{BaseRepo: gormutil.NewBaseRepo[CoreOAuthClient](db)}
 }
 
 // GetClientByClientID 根据客户端 ID 获取 OAuth 客户端
-func (r *OAuthRepo) GetClientByClientID(ctx context.Context, clientID string) (*OAuthClient, error) {
-	var client OAuthClient
+func (r *OAuthRepo) GetClientByClientID(ctx context.Context, clientID string) (*CoreOAuthClient, error) {
+	var client CoreOAuthClient
 	err := r.GetDB(ctx).Where("client_id = ? AND status = 1", clientID).First(&client).Error
 	if err != nil {
 		return nil, err
@@ -48,13 +48,13 @@ func (r *OAuthRepo) DeleteOAuthCode(ctx context.Context, code string) error {
 }
 
 // CreateOAuthToken 创建 OAuth 令牌
-func (r *OAuthRepo) CreateOAuthToken(ctx context.Context, token *OAuthToken) error {
+func (r *OAuthRepo) CreateOAuthToken(ctx context.Context, token *CoreOAuthToken) error {
 	return r.GetDB(ctx).Create(token).Error
 }
 
 // GetOAuthTokenByAccessToken 根据访问令牌获取 OAuth 令牌
-func (r *OAuthRepo) GetOAuthTokenByAccessToken(ctx context.Context, accessToken string) (*OAuthToken, error) {
-	var oauthToken OAuthToken
+func (r *OAuthRepo) GetOAuthTokenByAccessToken(ctx context.Context, accessToken string) (*CoreOAuthToken, error) {
+	var oauthToken CoreOAuthToken
 	err := r.GetDB(ctx).Where("access_token = ?", accessToken).First(&oauthToken).Error
 	if err != nil {
 		return nil, err
@@ -63,8 +63,8 @@ func (r *OAuthRepo) GetOAuthTokenByAccessToken(ctx context.Context, accessToken 
 }
 
 // GetOAuthTokenByRefreshToken 根据刷新令牌获取 OAuth 令牌
-func (r *OAuthRepo) GetOAuthTokenByRefreshToken(ctx context.Context, refreshToken string) (*OAuthToken, error) {
-	var oauthToken OAuthToken
+func (r *OAuthRepo) GetOAuthTokenByRefreshToken(ctx context.Context, refreshToken string) (*CoreOAuthToken, error) {
+	var oauthToken CoreOAuthToken
 	err := r.GetDB(ctx).Where("refresh_token = ?", refreshToken).First(&oauthToken).Error
 	if err != nil {
 		return nil, err
@@ -79,5 +79,5 @@ func (r *OAuthRepo) DeleteExpiredOAuthCodes(ctx context.Context) error {
 
 // DeleteExpiredOAuthTokens 删除过期的 OAuth 令牌
 func (r *OAuthRepo) DeleteExpiredOAuthTokens(ctx context.Context) error {
-	return r.GetDB(ctx).Where("expires_at < NOW()").Delete(&OAuthToken{}).Error
+	return r.GetDB(ctx).Where("expires_at < NOW()").Delete(&CoreOAuthToken{}).Error
 }

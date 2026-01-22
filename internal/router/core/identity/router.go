@@ -12,6 +12,14 @@ func RegisterRoutes(app *app.App) {
 	var oauthHandler = NewOAuthHandler(oauthRepo)
 	var twoFAHandler = NewTwoFAHandler(twoFARepo)
 
+	app.Db.AutoMigrate(
+		&CoreLoginLog{},
+		&CoreOAuthClient{},
+		&CoreOAuthToken{},
+		&CoreTwoFA{},
+		&CoreTwoFALog{},
+	)
+
 	e := app.Server.Engine()
 
 	// 登录路由
