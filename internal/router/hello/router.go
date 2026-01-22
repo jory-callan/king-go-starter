@@ -10,17 +10,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-type Router struct{}
-
-func New() *Router {
-	return &Router{}
-}
-
-func (m *Router) Name() string {
-	return "hello"
-}
-
-func (m *Router) Register(app *app.App) {
+// Register 只是用于最简单的代码测试而已
+func Register(app *app.App) {
 	e := app.Server.Engine()
 	g := e.Group("/api/v1/hello")
 	g.GET("/echo", func(c echo.Context) error {
