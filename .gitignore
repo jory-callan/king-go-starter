@@ -14,7 +14,6 @@
 # IDE 和编辑器配置
 .vscode/
 !.vscode/settings.json
-.idea/
 *.swp
 *.swo
 *~
