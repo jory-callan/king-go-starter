@@ -10,8 +10,8 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// Register 只是用于最简单的代码测试而已
-func Register(app *app.App) {
+// RegisterRoutes 只是用于最简单的代码测试而已
+func RegisterRoutes(app *app.App) {
 	e := app.Server.Engine()
 	g := e.Group("/api/v1/hello")
 	g.GET("/echo", func(c echo.Context) error {

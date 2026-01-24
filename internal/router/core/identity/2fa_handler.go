@@ -125,9 +125,6 @@ func (h *TwoFAHandler) VerifyTwoFA(c echo.Context) error {
 
 	// 验证 TOTP 码
 	valid := totp.Validate(req.Code, twoFA.Secret)
-	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "验证失败")
-	}
 	if !valid {
 		// 记录验证失败日志
 		log := &CoreTwoFALog{
@@ -175,9 +172,6 @@ func (h *TwoFAHandler) DisableTwoFA(c echo.Context) error {
 
 	// 验证 TOTP 码
 	valid := totp.Validate(req.Code, twoFA.Secret)
-	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "验证失败")
-	}
 	if !valid {
 		// 记录验证失败日志
 		log := &CoreTwoFALog{
