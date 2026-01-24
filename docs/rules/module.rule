@@ -1,0 +1,51 @@
+# King-Go-Starter 模块开发规范
+
+## 目录结构
+- 采用模块化设计，每个业务模块对应一个独立目录
+- 模块间根据包依赖关系组织
+- 核心模块示例：core（身份认证、访问控制）、user（用户管理）、access（权限控制）等
+
+## 文件规范
+每个模块目录必须包含以下文件（按需创建）：
+
+### 必需文件：
+- `router.go`: 定义模块路由、注册中间件，包含RegisterRoutes函数
+- `handler.go`: 请求处理逻辑，包含具体业务方法
+- `repository.go` 或 `repo.go`: 数据库操作，优先使用泛型BaseRepo[T]
+- `model.go`: 数据模型定义，包含GORM标签和表名定义
+- `req.go`: 请求结构体定义，包含验证标签
+- `resp.go`: 响应结构体定义（如需要）
+
+### 命名约定：
+- 单表模块：文件名不带前缀
+- 多表模块：文件名带表名前缀区分（如user_xxx.go）
+- Handler结构体：`type Handler struct { ... }`
+- Repository结构体：`type Repository struct { ... }`
+- 主要方法：`NewHandler()`、`NewRepository()`
+
+## 技术栈与工具
+- 使用Echo框架处理HTTP请求
+- 使用泛型`pkg/database/gormutil.BaseRepo[T]`进行数据库操作
+- 使用`internal/response`包统一返回格式
+- 支持泛型响应：`Success[T any]()`、`SuccessWithMsg[T any]()`等
+
+## 数据库操作
+- 继承BaseRepo[T]获得基础CRUD功能
+- 可扩展自定义查询方法
+- 遵循GORM模型定义规范
+
+## 响应格式
+- 统一使用ApiResponse[T]泛型结构
+- 成功响应：code=200, msg="success", data=实际数据
+- 错误响应：code=错误码, msg=错误信息, data=null
+
+## 示例结构
+```
+module/
+├── router.go     # 路由注册
+├── handler.go    # 控制器
+├── repository.go # 仓库层
+├── model.go      # 数据模型
+├── req.go        # 请求体
+└── resp.go       # 响应体
+```
