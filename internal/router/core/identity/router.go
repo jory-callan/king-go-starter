@@ -11,6 +11,7 @@ func RegisterRoutes(app *app.App) {
 	var loginHandler = NewLoginHandler(loginRepo)
 	var oauthHandler = NewOAuthHandler(oauthRepo)
 	var twoFAHandler = NewTwoFAHandler(twoFARepo)
+	var registerHandler = NewRegisterHandler(app)
 
 	e := app.Server.Engine()
 
@@ -20,6 +21,18 @@ func RegisterRoutes(app *app.App) {
 		loginGroup.POST("/login", loginHandler.Login)
 		loginGroup.POST("/logout", loginHandler.Logout)
 		loginGroup.POST("/refresh", loginHandler.RefreshToken)
+	}
+
+	// 注册路由
+	registerGroup := e.Group("/api/core/register")
+	{
+		registerGroup.POST("", registerHandler.Register)
+	}
+
+	// 重置密码路由
+	resetPasswordGroup := e.Group("/api/core/password")
+	{
+		resetPasswordGroup.PUT("/reset", registerHandler.ResetPassword)
 	}
 
 	// OAuth 路由

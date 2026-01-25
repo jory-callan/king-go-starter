@@ -17,8 +17,8 @@
 - `resp.go`: 响应结构体定义（如需要）
 
 ### 命名约定：
-- 单表模块：文件名不带前缀
-- 多表模块：文件名带表名前缀区分（如user_xxx.go）
+- 单表模块：文件名不带前缀，对于中间表，统一放在前缀单表里面
+- 多表模块：文件名带表名前缀区分（如user_xxx.go）不包括中间表
 - Handler结构体：`type Handler struct { ... }`
 - Repository结构体：`type Repository struct { ... }`
 - 主要方法：`NewHandler()`、`NewRepository()`

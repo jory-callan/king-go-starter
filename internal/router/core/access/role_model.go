@@ -25,6 +25,19 @@ func (CoreRole) TableName() string {
 	return "core_role"
 }
 
+// CoreUserRole 用户角色关联表
+type CoreUserRole struct {
+	UserID    string         `gorm:"type:varchar(32);primaryKey;comment:用户ID" json:"user_id"`
+	RoleID    string         `gorm:"type:varchar(32);primaryKey;comment:角色ID" json:"role_id"`
+	CreatedAt time.Time      `gorm:"autoCreateTime;comment:创建时间" json:"created_at"`
+	CreatedBy string         `gorm:"type:varchar(32);comment:创建人ID" json:"created_by"`
+	DeletedAt gorm.DeletedAt `gorm:"index;comment:删除时间" json:"deleted_at,omitempty"`
+}
+
+func (CoreUserRole) TableName() string {
+	return "core_user_roles"
+}
+
 // CoreRoleMenu 角色菜单关联表 (手动维护)
 type CoreRoleMenu struct {
 	RoleID string `gorm:"type:varchar(32);primaryKey;comment:角色ID" json:"role_id"`
