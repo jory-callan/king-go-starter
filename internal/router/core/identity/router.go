@@ -2,6 +2,21 @@ package identity
 
 import "king-starter/internal/app"
 
+func RegisterAutoMigrate(app *app.App) {
+	// 自动迁移数据库表结构
+	app.Db.DB.AutoMigrate(
+		&CoreLoginLog{},
+		&CoreRefreshToken{},
+
+		&CoreUserOAuthClient{},
+		&CoreUserOAuthCode{},
+		&CoreUserOAuthToken{},
+
+		&CoreUserTwoFA{},
+		&CoreUserTwoFALog{},
+	)
+}
+
 // RegisterRoutes 提供 Identity 模块的路由注册方法
 func RegisterRoutes(app *app.App) {
 	var loginRepo = NewLoginRepo(app.Db.DB)

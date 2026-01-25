@@ -2,7 +2,7 @@ package router
 
 import (
 	"king-starter/internal/app"
-	"king-starter/internal/router/core/identity"
+	"king-starter/internal/router/core/auth"
 	"king-starter/internal/router/core/permission"
 	"king-starter/internal/router/core/role"
 	"king-starter/internal/router/core/user"
@@ -27,5 +27,7 @@ func RegisterAll(app *app.App) {
 	user.RegisterRoutes(app)
 	role.RegisterRoutes(app)
 	permission.RegisterRoutes(app)
-	identity.RegisterRoutes(app)
+	// 认证模块
+	// identity.RegisterRoutes(app)
+	auth.RegisterAuthRoutes(app)
 }
