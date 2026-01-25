@@ -41,3 +41,35 @@ func FilterPermissions(allPerms []string, pattern string) []string {
 	}
 	return filtered
 }
+
+// BuildPermissionTree 将扁平的权限数据转换为树形结构
+func BuildPermissionTree(permissions []CorePermission) []CorePermission {
+	// 创建一个映射，便于快速查找
+	permissionMap := make(map[string]*CorePermission)
+	var rootNodes []CorePermission
+
+	// 第一遍遍历：创建所有节点的引用并初始化子节点切片
+	for i := range permissions {
+		perm := &permissions[i]
+		permissionMap[perm.ID] = perm
+		// 初始化子节点切片
+		perm.Children = make([]CorePermission, 0)
+	}
+
+	// 第二遍遍历：建立父子关系
+	for i := range permissions {
+		perm := &permissions[i]
+		if perm.ParentID == "" || perm.ParentID == "0" {
+			// 这是一个根节点
+			rootNodes = append(rootNodes, *perm)
+		} else {
+			// 查找父节点
+			if parent, exists := permissionMap[perm.ParentID]; exists {
+				// 添加到父节点的子节点列表
+				parent.Children = append(parent.Children, *perm)
+			}
+		}
+	}
+
+	return rootNodes
+}

@@ -15,16 +15,6 @@ type UpdateRoleReq struct {
 	Remark string `json:"remark"`
 }
 
-// UpdateRoleMenusReq 更新角色菜单请求
-type UpdateRoleMenusReq struct {
-	MenuIDs []string `json:"menu_ids"`
-}
-
-// UpdateRolePermissionsReq 更新角色权限请求
-type UpdateRolePermissionsReq struct {
-	PermissionIDs []string `json:"permission_ids"`
-}
-
 // RoleListReq 角色列表请求
 type RoleListReq struct {
 	Page     int    `json:"page" form:"page"`
@@ -32,4 +22,15 @@ type RoleListReq struct {
 	Code     string `json:"code" form:"code"`
 	Name     string `json:"name" form:"name"`
 	Status   int    `json:"status" form:"status"`
+}
+
+// AssignUserRoleReq 分配用户角色请求
+type AssignUserRoleReq struct {
+	RoleIDs []string `json:"role_ids" binding:"required"`
+}
+
+// GetUserRolesResp 获取用户角色响应
+type GetUserRolesResp struct {
+	UserID string     `json:"user_id"`
+	Roles  []CoreRole `json:"roles"`
 }

@@ -190,3 +190,93 @@ func (h *PermissionHandler) GetPermissionTree(c echo.Context) error {
 
 	return response.Success[[]CorePermission](c, permissions)
 }
+
+// AssignRolePermissions 为角色分配权限
+func (h *PermissionHandler) AssignRolePermissions(c echo.Context) error {
+	roleID := c.Param("role_id")
+	var req AssignRolePermissionsReq
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, http.StatusBadRequest, "请求参数错误")
+	}
+
+	if err := h.repo.AssignRolePermissions(c.Request().Context(), roleID, req.PermissionIDs); err != nil {
+		return response.Error(c, http.StatusInternalServerError, "分配权限失败")
+	}
+
+	return response.SuccessWithMsg[any](c, "权限分配成功", nil)
+}
+
+// GetRolePermissions 获取角色拥有的权限
+func (h *PermissionHandler) GetRolePermissions(c echo.Context) error {
+	roleID := c.Param("role_id")
+	permissions, err := h.repo.GetRolePermissions(c.Request().Context(), roleID)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "获取角色权限失败")
+	}
+
+	return response.Success[any](c, map[string]interface{}{
+		"permission_ids": permissions,
+	})
+}
+
+// GetRolePermissionsWithDetails 获取角色拥有的权限详细信息
+func (h *PermissionHandler) GetRolePermissionsWithDetails(c echo.Context) error {
+	roleID := c.Param("role_id")
+	permissions, err := h.repo.GetRolePermissionsWithDetails(c.Request().Context(), roleID)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "获取角色权限详情失败")
+	}
+
+	return response.Success[any](c, map[string]interface{}{
+		"role_id":      roleID,
+		"permissions":  permissions,
+	})
+}
+
+// GetUserAllPermissions 获取用户的所有权限
+func (h *PermissionHandler) GetUserAllPermissions(c echo.Context) error {
+	userID := c.Param("user_id")
+	permissions, err := h.repo.GetUserAllPermissions(c.Request().Context(), userID)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "获取用户权限失败")
+	}
+
+	return response.Success[any](c, map[string]interface{}{
+		"user_id":     userID,
+		"permissions": permissions,
+	})
+}
+
+// RemoveRolePermissions 移除角色的部分或全部权限
+func (h *PermissionHandler) RemoveRolePermissions(c echo.Context) error {
+	roleID := c.Param("role_id")
+	var req AssignRolePermissionsReq
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, http.StatusBadRequest, "请求参数错误")
+	}
+
+	if err := h.repo.RemoveRolePermissions(c.Request().Context(), roleID, req.PermissionIDs); err != nil {
+		return response.Error(c, http.StatusInternalServerError, "移除角色权限失败")
+	}
+
+	msg := "角色权限移除成功"
+	if len(req.PermissionIDs) == 0 {
+		msg = "角色所有权限已清空"
+	}
+
+	return response.SuccessWithMsg[any](c, msg, nil)
+}
+
+// GetRolePermissionTree 获取角色权限树结构
+func (h *PermissionHandler) GetRolePermissionTree(c echo.Context) error {
+	roleID := c.Param("role_id")
+	permissions, err := h.repo.GetRolePermissionTree(c.Request().Context(), roleID)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "获取角色权限树失败")
+	}
+
+	return response.Success[any](c, map[string]interface{}{
+		"role_id": roleID,
+		"tree":    permissions,
+	})
+}

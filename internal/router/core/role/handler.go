@@ -5,21 +5,17 @@ import (
 	"net/http"
 	"strconv"
 
-	perm "king-starter/internal/router/core/access/permission"
-
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
 )
 
 type RoleHandler struct {
-	roleRepo       *RoleRepo
-	permissionRepo *perm.PermissionRepo
+	roleRepo *RoleRepo
 }
 
-func NewRoleHandler(roleRepo *RoleRepo, permissionRepo *perm.PermissionRepo) *RoleHandler {
+func NewRoleHandler(roleRepo *RoleRepo) *RoleHandler {
 	return &RoleHandler{
-		roleRepo:       roleRepo,
-		permissionRepo: permissionRepo,
+		roleRepo: roleRepo,
 	}
 }
 
@@ -56,20 +52,8 @@ func (h *RoleHandler) GetRoleDetail(c echo.Context) error {
 		return response.Error(c, http.StatusNotFound, "角色不存在")
 	}
 
-	menus, err := h.roleRepo.GetRoleMenus(c.Request().Context(), id)
-	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "获取角色菜单失败")
-	}
-
-	perms, err := h.roleRepo.GetRolePermissions(c.Request().Context(), id)
-	if err != nil {
-		return response.Error(c, http.StatusInternalServerError, "获取角色权限失败")
-	}
-
 	return response.Success[any](c, map[string]interface{}{
-		"role":           role,
-		"menu_ids":       menus,
-		"permission_ids": perms,
+		"role": role,
 	})
 }
 
@@ -124,36 +108,6 @@ func (h *RoleHandler) DeleteRole(c echo.Context) error {
 	return response.SuccessWithMsg[any](c, "删除成功", nil)
 }
 
-// UpdateRoleMenus 更新角色菜单（保留此方法以兼容旧版API）
-func (h *RoleHandler) UpdateRoleMenus(c echo.Context) error {
-	id := c.Param("id")
-	var req UpdateRoleMenusReq
-	if err := c.Bind(&req); err != nil {
-		return response.Error(c, http.StatusBadRequest, "请求参数错误")
-	}
-
-	if err := h.roleRepo.AssignMenus(c.Request().Context(), id, req.MenuIDs); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "更新失败")
-	}
-
-	return response.SuccessWithMsg[any](c, "菜单分配成功", nil)
-}
-
-// UpdateRolePermissions 更新角色权限
-func (h *RoleHandler) UpdateRolePermissions(c echo.Context) error {
-	id := c.Param("id")
-	var req UpdateRolePermissionsReq
-	if err := c.Bind(&req); err != nil {
-		return response.Error(c, http.StatusBadRequest, "请求参数错误")
-	}
-
-	if err := h.roleRepo.AssignPermissions(c.Request().Context(), id, req.PermissionIDs); err != nil {
-		return response.Error(c, http.StatusInternalServerError, "更新失败")
-	}
-
-	return response.SuccessWithMsg[any](c, "权限分配成功", nil)
-}
-
 // ListRoles 获取角色列表
 func (h *RoleHandler) ListRoles(c echo.Context) error {
 	var pq response.PageQuery
@@ -196,4 +150,61 @@ func (h *RoleHandler) ListRoles(c echo.Context) error {
 	}
 
 	return response.SuccessPage[CoreRole](c, *result)
+}
+
+// AssignRolesToUser 为用户分配角色
+func (h *RoleHandler) AssignRolesToUser(c echo.Context) error {
+	userID := c.Param("user_id")
+	var req AssignUserRoleReq
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, http.StatusBadRequest, "请求参数错误")
+	}
+
+	operatorID := "system-admin" // TODO: 从 Context 获取
+
+	if err := h.roleRepo.AssignRolesToUser(c.Request().Context(), userID, req.RoleIDs, operatorID); err != nil {
+		return response.Error(c, http.StatusInternalServerError, "分配角色失败")
+	}
+
+	return response.SuccessWithMsg[any](c, "角色分配成功", nil)
+}
+
+// GetUserRoles 获取用户的角色
+func (h *RoleHandler) GetUserRoles(c echo.Context) error {
+	userID := c.Param("user_id")
+	roles, err := h.roleRepo.GetUserRolesWithDetails(c.Request().Context(), userID)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "获取用户角色失败")
+	}
+
+	return response.Success[any](c, map[string]interface{}{
+		"user_id": userID,
+		"roles":   roles,
+	})
+}
+
+// GetRoleUsers 获取角色下的用户列表
+func (h *RoleHandler) GetRoleUsers(c echo.Context) error {
+	roleID := c.Param("role_id")
+	userIDs, err := h.roleRepo.GetRoleUsers(c.Request().Context(), roleID)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "获取角色用户失败")
+	}
+
+	return response.Success[any](c, map[string]interface{}{
+		"role_id": roleID,
+		"user_ids": userIDs,
+	})
+}
+
+// RemoveUserRole 解绑用户角色
+func (h *RoleHandler) RemoveUserRole(c echo.Context) error {
+	userID := c.Param("user_id")
+	roleID := c.Param("role_id")
+
+	if err := h.roleRepo.RemoveUserRole(c.Request().Context(), userID, roleID); err != nil {
+		return response.Error(c, http.StatusInternalServerError, "解绑用户角色失败")
+	}
+
+	return response.SuccessWithMsg[any](c, "用户角色解绑成功", nil)
 }

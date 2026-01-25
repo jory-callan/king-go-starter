@@ -35,3 +35,8 @@ type PermissionListReq struct {
 	ParentID string `json:"parent_id" form:"parent_id"`
 	Status   int    `json:"status" form:"status"`
 }
+
+// AssignRolePermissionsReq 分配角色权限请求
+type AssignRolePermissionsReq struct {
+	PermissionIDs []string `json:"permission_ids"`
+}

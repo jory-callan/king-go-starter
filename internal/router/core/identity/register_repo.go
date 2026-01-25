@@ -2,7 +2,7 @@ package identity
 
 import (
 	"context"
-	"king-starter/internal/router/core/access/role"
+	"king-starter/internal/router/core/role"
 	"king-starter/internal/router/core/user"
 	"king-starter/pkg/database/gormutil"
 

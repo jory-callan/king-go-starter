@@ -24,8 +24,19 @@ type CorePermission struct {
 	UpdatedBy string         `gorm:"type:varchar(32);comment:更新人ID" json:"updated_by"`
 	DeletedAt gorm.DeletedAt `gorm:"index;comment:删除时间" json:"deleted_at,omitempty"`
 	DeletedBy string         `gorm:"type:varchar(32);comment:删除人ID" json:"deleted_by,omitempty"`
+	Children  []CorePermission `gorm:"-" json:"children,omitempty"` // 子权限，不存储到数据库
 }
 
 func (CorePermission) TableName() string {
 	return "core_permission"
+}
+
+// CoreRolePermission 角色权限关联表
+type CoreRolePermission struct {
+	RoleID       string `gorm:"type:varchar(32);primaryKey;comment:角色ID" json:"role_id"`
+	PermissionID string `gorm:"type:varchar(32);primaryKey;comment:权限ID" json:"permission_id"`
+}
+
+func (CoreRolePermission) TableName() string {
+	return "core_role_permission"
 }
