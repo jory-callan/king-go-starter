@@ -2,7 +2,9 @@ package router
 
 import (
 	"king-starter/internal/app"
-	"king-starter/internal/router/core/access"
+	"king-starter/internal/router/core/access" // 主要的access路由
+	permission_access "king-starter/internal/router/core/access/permission"
+	role_access "king-starter/internal/router/core/access/role"
 	"king-starter/internal/router/core/identity"
 	"king-starter/internal/router/core/user"
 	"king-starter/internal/router/hello"
@@ -15,11 +17,10 @@ func RegisterAutoMigrate(app *app.App) {
 		// core/user
 		&user.CoreUser{},
 		// core/access
-		&access.CoreRole{},
-		&access.CoreMenu{},
-		&access.CorePermission{},
-		&access.CoreRoleMenu{},
-		&access.CoreRolePermission{},
+		&role_access.CoreRole{},
+		&permission_access.CorePermission{}, // 权限表现在包含菜单功能
+		&role_access.CoreRoleMenu{},         // 角色菜单关联表 (兼容旧版)
+		&role_access.CoreRolePermission{},   // 角色权限关联表
 		// core/identity
 		&identity.CoreLoginLog{},
 		&identity.CoreOAuthClient{},

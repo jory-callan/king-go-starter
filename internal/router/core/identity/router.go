@@ -15,12 +15,25 @@ func RegisterRoutes(app *app.App) {
 
 	e := app.Server.Engine()
 
-	// 登录路由
-	loginGroup := e.Group("/api/core/auth")
+	// 统一认证路由
+	authGroup := e.Group("/api/core/auth")
 	{
-		loginGroup.POST("/login", loginHandler.Login)
-		loginGroup.POST("/logout", loginHandler.Logout)
-		loginGroup.POST("/refresh", loginHandler.RefreshToken)
+		authGroup.POST("/login", loginHandler.Login) // 密码登录
+		authGroup.POST("/logout", loginHandler.Logout)
+		authGroup.POST("/refresh", loginHandler.RefreshToken)
+
+		// 手机认证路由
+		authGroup.POST("/login/phone", loginHandler.Login) // 手机号登录（需要扩展）
+
+		// OAuth2 认证路由
+		authGroup.GET("/oauth/authorize", oauthHandler.Authorize)
+		authGroup.POST("/oauth/token", oauthHandler.GetToken)
+		authGroup.GET("/oauth/userinfo", oauthHandler.GetUserInfo)
+
+		// 2FA 认证路由
+		authGroup.POST("/2fa/verify", twoFAHandler.VerifyTwoFA)   // 2FA验证
+		authGroup.POST("/2fa/enable", twoFAHandler.EnableTwoFA)   // 启用2FA
+		authGroup.POST("/2fa/disable", twoFAHandler.DisableTwoFA) // 禁用2FA
 	}
 
 	// 注册路由
@@ -33,21 +46,5 @@ func RegisterRoutes(app *app.App) {
 	resetPasswordGroup := e.Group("/api/core/password")
 	{
 		resetPasswordGroup.PUT("/reset", registerHandler.ResetPassword)
-	}
-
-	// OAuth 路由
-	oauthGroup := e.Group("/api/core/oauth")
-	{
-		oauthGroup.GET("/authorize", oauthHandler.Authorize)
-		oauthGroup.POST("/token", oauthHandler.GetToken)
-		oauthGroup.GET("/userinfo", oauthHandler.GetUserInfo)
-	}
-
-	// 2FA 路由
-	twoFAGroup := e.Group("/api/core/2fa")
-	{
-		twoFAGroup.POST("/enable", twoFAHandler.EnableTwoFA)
-		twoFAGroup.POST("/verify", twoFAHandler.VerifyTwoFA)
-		twoFAGroup.POST("/disable", twoFAHandler.DisableTwoFA)
 	}
 }

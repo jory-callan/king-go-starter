@@ -1,9 +1,11 @@
-package access
+package role
 
 import (
 	"king-starter/internal/response"
 	"net/http"
 	"strconv"
+
+	perm "king-starter/internal/router/core/access/permission"
 
 	"github.com/labstack/echo/v4"
 	"gorm.io/gorm"
@@ -11,14 +13,12 @@ import (
 
 type RoleHandler struct {
 	roleRepo       *RoleRepo
-	menuRepo       *MenuRepo
-	permissionRepo *PermissionRepo
+	permissionRepo *perm.PermissionRepo
 }
 
-func NewRoleHandler(roleRepo *RoleRepo, menuRepo *MenuRepo, permissionRepo *PermissionRepo) *RoleHandler {
+func NewRoleHandler(roleRepo *RoleRepo, permissionRepo *perm.PermissionRepo) *RoleHandler {
 	return &RoleHandler{
 		roleRepo:       roleRepo,
-		menuRepo:       menuRepo,
 		permissionRepo: permissionRepo,
 	}
 }
@@ -124,7 +124,7 @@ func (h *RoleHandler) DeleteRole(c echo.Context) error {
 	return response.SuccessWithMsg[any](c, "删除成功", nil)
 }
 
-// UpdateRoleMenus 更新角色菜单
+// UpdateRoleMenus 更新角色菜单（保留此方法以兼容旧版API）
 func (h *RoleHandler) UpdateRoleMenus(c echo.Context) error {
 	id := c.Param("id")
 	var req UpdateRoleMenusReq

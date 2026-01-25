@@ -1,4 +1,4 @@
-package access
+package role
 
 // CreateRoleReq 创建角色请求
 type CreateRoleReq struct {

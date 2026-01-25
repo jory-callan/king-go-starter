@@ -1,6 +1,7 @@
-package access
+package permission
 
 import (
+	"fmt"
 	"king-starter/internal/response"
 	"net/http"
 
@@ -29,6 +30,11 @@ func (h *PermissionHandler) CreatePermission(c echo.Context) error {
 		Code:      req.Code,
 		Name:      req.Name,
 		Type:      req.Type,
+		ParentID:  req.ParentID,
+		Path:      req.Path,
+		Icon:      req.Icon,
+		Sort:      req.Sort,
+		Status:    req.Status,
 		Remark:    req.Remark,
 		CreatedBy: operatorID,
 		UpdatedBy: operatorID,
@@ -69,6 +75,11 @@ func (h *PermissionHandler) UpdatePermission(c echo.Context) error {
 
 	permission.Name = req.Name
 	permission.Type = req.Type
+	permission.ParentID = req.ParentID
+	permission.Path = req.Path
+	permission.Icon = req.Icon
+	permission.Sort = req.Sort
+	permission.Status = req.Status
 	permission.Remark = req.Remark
 	permission.UpdatedBy = operatorID
 
@@ -117,6 +128,15 @@ func (h *PermissionHandler) ListPermissions(c echo.Context) error {
 	code := c.QueryParam("code")
 	name := c.QueryParam("name")
 	type_ := c.QueryParam("type")
+	parentID := c.QueryParam("parent_id")
+	statusStr := c.QueryParam("status")
+
+	var status *int
+	if statusStr != "" {
+		statusVal := 0
+		fmt.Sscanf(statusStr, "%d", &statusVal)
+		status = &statusVal
+	}
 
 	// 创建筛选条件的 scope 函数
 	scopes := make([]func(*gorm.DB) *gorm.DB, 0)
@@ -136,6 +156,16 @@ func (h *PermissionHandler) ListPermissions(c echo.Context) error {
 			return db.Where("type = ?", type_)
 		})
 	}
+	if parentID != "" {
+		scopes = append(scopes, func(db *gorm.DB) *gorm.DB {
+			return db.Where("parent_id = ?", parentID)
+		})
+	}
+	if status != nil {
+		scopes = append(scopes, func(db *gorm.DB) *gorm.DB {
+			return db.Where("status = ?", *status)
+		})
+	}
 
 	// 使用 BaseRepo 的分页方法
 	result, err := h.repo.PaginationWithScopes(c.Request().Context(), &pq, scopes...)
@@ -144,4 +174,19 @@ func (h *PermissionHandler) ListPermissions(c echo.Context) error {
 	}
 
 	return response.SuccessPage[CorePermission](c, *result)
+}
+
+// GetPermissionTree 获取权限树结构
+func (h *PermissionHandler) GetPermissionTree(c echo.Context) error {
+	parentID := c.QueryParam("parent_id")
+	if parentID == "" {
+		parentID = "0"
+	}
+
+	permissions, err := h.repo.GetPermissionTree(c.Request().Context(), parentID)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "获取权限树失败")
+	}
+
+	return response.Success[[]CorePermission](c, permissions)
 }

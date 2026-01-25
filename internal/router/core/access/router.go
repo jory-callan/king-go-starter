@@ -1,16 +1,18 @@
 package access
 
-import "king-starter/internal/app"
+import (
+	"king-starter/internal/app"
+	perm "king-starter/internal/router/core/access/permission"
+	role_mod "king-starter/internal/router/core/access/role"
+)
 
 // RegisterRoutes 提供 Access 模块的路由注册方法
 func RegisterRoutes(app *app.App) {
-	var roleRepo = NewRoleRepo(app.Db.DB)
-	var menuRepo = NewMenuRepo(app.Db.DB)
-	var permissionRepo = NewPermissionRepo(app.Db.DB)
+	var roleRepo = role_mod.NewRoleRepo(app.Db.DB)
+	var permissionRepo = perm.NewPermissionRepo(app.Db.DB)
 
-	var roleHandler = NewRoleHandler(roleRepo, menuRepo, permissionRepo)
-	var menuHandler = NewMenuHandler(menuRepo)
-	var permHandler = NewPermissionHandler(permissionRepo)
+	var roleHandler = role_mod.NewRoleHandler(roleRepo, permissionRepo)
+	var permHandler = perm.NewPermissionHandler(permissionRepo)
 
 	e := app.Server.Engine()
 
@@ -22,21 +24,10 @@ func RegisterRoutes(app *app.App) {
 		roleGroup.GET("/:id", roleHandler.GetRoleDetail)
 		roleGroup.PUT("/:id", roleHandler.UpdateRole)
 		roleGroup.DELETE("/:id", roleHandler.DeleteRole)
-		roleGroup.PUT("/:id/menus", roleHandler.UpdateRoleMenus)
-		roleGroup.PUT("/:id/permissions", roleHandler.UpdateRolePermissions)
+		roleGroup.PUT("/:id/permissions", roleHandler.UpdateRolePermissions) // 移除了UpdateRoleMenus
 	}
 
-	// 菜单路由
-	menuGroup := e.Group("/api/core/menus")
-	{
-		menuGroup.POST("", menuHandler.CreateMenu)
-		menuGroup.GET("", menuHandler.ListMenus)
-		menuGroup.GET("/:id", menuHandler.GetMenuDetail)
-		menuGroup.PUT("/:id", menuHandler.UpdateMenu)
-		menuGroup.DELETE("/:id", menuHandler.DeleteMenu)
-	}
-
-	// 权限路由
+	// 权限路由（现在包括菜单功能）
 	permGroup := e.Group("/api/core/permissions")
 	{
 		permGroup.POST("", permHandler.CreatePermission)
@@ -44,5 +35,6 @@ func RegisterRoutes(app *app.App) {
 		permGroup.GET("/:id", permHandler.GetPermissionDetail)
 		permGroup.PUT("/:id", permHandler.UpdatePermission)
 		permGroup.DELETE("/:id", permHandler.DeletePermission)
+		permGroup.GET("/tree", permHandler.GetPermissionTree) // 新增权限树接口
 	}
 }
