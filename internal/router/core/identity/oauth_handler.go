@@ -44,7 +44,7 @@ func (h *OAuthHandler) Authorize(c echo.Context) error {
 	}
 
 	// 生成授权码
-	authCode := &OAuthCode{
+	authCode := &CoreUserOAuthCode{
 		ID:          uuid.New().String(),
 		ClientID:    client.ClientID,
 		UserID:      "1", // 模拟用户 ID
@@ -147,7 +147,7 @@ func (h *OAuthHandler) GetToken(c echo.Context) error {
 	}
 
 	// 生成访问令牌和刷新令牌
-	oauthToken := &CoreOAuthToken{
+	oauthToken := &CoreUserOAuthToken{
 		ID:           uuid.New().String(),
 		ClientID:     req.ClientID,
 		UserID:       userID,

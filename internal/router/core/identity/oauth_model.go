@@ -4,8 +4,8 @@ import (
 	"time"
 )
 
-// CoreOAuthClient OAuth 客户端模型
-type CoreOAuthClient struct {
+// CoreUserOAuthClient OAuth 客户端模型
+type CoreUserOAuthClient struct {
 	ID           string    `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	ClientID     string    `gorm:"type:varchar(100);uniqueIndex" json:"client_id"`
 	ClientSecret string    `gorm:"type:varchar(255)" json:"client_secret"`
@@ -17,12 +17,12 @@ type CoreOAuthClient struct {
 }
 
 // TableName 指定表名
-func (CoreOAuthClient) TableName() string {
-	return "core_oauth_clients"
+func (CoreUserOAuthClient) TableName() string {
+	return "core_user_oauth_clients"
 }
 
-// OAuthCode OAuth 授权码模型
-type OAuthCode struct {
+// CoreUserOAuthCode OAuth 授权码模型
+type CoreUserOAuthCode struct {
 	ID          string    `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	ClientID    string    `gorm:"type:varchar(100);index" json:"client_id"`
 	UserID      string    `gorm:"type:varchar(36);index" json:"user_id"`
@@ -34,12 +34,12 @@ type OAuthCode struct {
 }
 
 // TableName 指定表名
-func (OAuthCode) TableName() string {
-	return "core_oauth_codes"
+func (CoreUserOAuthCode) TableName() string {
+	return "core_user_oauth_codes"
 }
 
-// CoreOAuthToken OAuth 令牌模型
-type CoreOAuthToken struct {
+// CoreUserOAuthToken OAuth 令牌模型
+type CoreUserOAuthToken struct {
 	ID           string    `gorm:"primaryKey;type:varchar(36)" json:"id"`
 	ClientID     string    `gorm:"type:varchar(100);index" json:"client_id"`
 	UserID       string    `gorm:"type:varchar(36);index" json:"user_id"`
@@ -53,6 +53,6 @@ type CoreOAuthToken struct {
 }
 
 // TableName 指定表名
-func (CoreOAuthToken) TableName() string {
-	return "core_oauth_tokens"
+func (CoreUserOAuthToken) TableName() string {
+	return "core_user_oauth_tokens"
 }
