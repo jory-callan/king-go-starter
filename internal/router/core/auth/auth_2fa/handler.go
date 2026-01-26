@@ -59,7 +59,7 @@ func (h *TwoFAHandler) EnableTwoFA(c echo.Context) error {
 	}
 	if !valid {
 		// 记录验证失败日志
-		log := &auth_password.LoginLog{
+		log := &auth_password.CoreLoginLog{
 			ID:        uuid.New().String(),
 			UserID:    req.UserID,
 			Username:  "", // 暂时为空，后续可以优化
@@ -93,7 +93,7 @@ func (h *TwoFAHandler) EnableTwoFA(c echo.Context) error {
 	}
 
 	// 记录验证成功日志
-	log := &auth_password.LoginLog{
+	log := &auth_password.CoreLoginLog{
 		ID:        uuid.New().String(),
 		UserID:    req.UserID,
 		Username:  "", // 暂时为空，后续可以优化
@@ -133,7 +133,7 @@ func (h *TwoFAHandler) VerifyTwoFA(c echo.Context) error {
 	valid := totp.Validate(req.Code, twoFA.Secret)
 	if !valid {
 		// 记录验证失败日志
-		log := &auth_password.LoginLog{
+		log := &auth_password.CoreLoginLog{
 			ID:        uuid.New().String(),
 			UserID:    req.UserID,
 			Username:  "", // 暂时为空，后续可以优化
@@ -149,7 +149,7 @@ func (h *TwoFAHandler) VerifyTwoFA(c echo.Context) error {
 	}
 
 	// 记录验证成功日志
-	log := &auth_password.LoginLog{
+	log := &auth_password.CoreLoginLog{
 		ID:        uuid.New().String(),
 		UserID:    req.UserID,
 		Username:  "", // 暂时为空，后续可以优化
@@ -184,7 +184,7 @@ func (h *TwoFAHandler) DisableTwoFA(c echo.Context) error {
 	valid := totp.Validate(req.Code, twoFA.Secret)
 	if !valid {
 		// 记录验证失败日志
-		log := &auth_password.LoginLog{
+		log := &auth_password.CoreLoginLog{
 			ID:        uuid.New().String(),
 			UserID:    req.UserID,
 			Username:  "", // 暂时为空，后续可以优化
@@ -206,7 +206,7 @@ func (h *TwoFAHandler) DisableTwoFA(c echo.Context) error {
 	}
 
 	// 记录验证成功日志
-	log := &auth_password.LoginLog{
+	log := &auth_password.CoreLoginLog{
 		ID:        uuid.New().String(),
 		UserID:    req.UserID,
 		Username:  "", // 暂时为空，后续可以优化

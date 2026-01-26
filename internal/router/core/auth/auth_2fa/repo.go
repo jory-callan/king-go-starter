@@ -3,8 +3,9 @@ package auth_2fa
 import (
 	"context"
 
-	"gorm.io/gorm"
 	"king-starter/internal/router/core/auth/auth_password"
+
+	"gorm.io/gorm"
 )
 
 // Repository 2FA 认证仓库
@@ -38,6 +39,6 @@ func (r *Repository) UpdateTwoFA(ctx context.Context, config *TwoFAConfig) error
 }
 
 // CreateLoginLog 创建登录日志
-func (r *Repository) CreateLoginLog(ctx context.Context, log *auth_password.LoginLog) error {
+func (r *Repository) CreateLoginLog(ctx context.Context, log *auth_password.CoreLoginLog) error {
 	return r.db.WithContext(ctx).Create(log).Error
 }

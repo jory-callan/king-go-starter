@@ -3,8 +3,9 @@ package auth_oauth2
 import (
 	"context"
 
-	"gorm.io/gorm"
 	"king-starter/internal/router/core/auth/auth_password"
+
+	"gorm.io/gorm"
 )
 
 // Repository OAuth2 认证仓库
@@ -88,6 +89,6 @@ func (r *Repository) DeleteOAuthToken(ctx context.Context, accessToken string) e
 }
 
 // CreateLoginLog 创建登录日志
-func (r *Repository) CreateLoginLog(ctx context.Context, log *auth_password.LoginLog) error {
+func (r *Repository) CreateLoginLog(ctx context.Context, log *auth_password.CoreLoginLog) error {
 	return r.db.WithContext(ctx).Create(log).Error
 }

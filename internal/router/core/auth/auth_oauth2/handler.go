@@ -96,7 +96,7 @@ func (h *OAuthHandler) Authorize(c echo.Context) error {
 	}
 
 	// 记录 OAuth2 授权成功日志
-	log := &auth_password2.LoginLog{
+	log := &auth_password2.CoreLoginLog{
 		ID:        uuid.New().String(),
 		UserID:    "1",
 		Username:  "admin", // 示例用户名

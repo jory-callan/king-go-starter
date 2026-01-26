@@ -14,6 +14,7 @@ func RegisterAutoMigrate(app *app.App) {
 	user.RegisterAutoMigrate(app)
 	role.RegisterAutoMigrate(app)
 	permission.RegisterAutoMigrate(app)
+	auth.RegisterAutoMigrate(app)
 }
 
 func RegisterAll(app *app.App) {

@@ -5,6 +5,8 @@ import (
 	"time"
 
 	"king-starter/internal/response"
+	"king-starter/internal/router/core/user"
+	"king-starter/pkg/goutils/idutil"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -12,33 +14,17 @@ import (
 	"gorm.io/gorm"
 )
 
-// LoginReq 登录请求参数
-type LoginReq struct {
-	Username string `json:"username" validate:"required"`
-	Password string `json:"password" validate:"required"`
-	Captcha  string `json:"captcha,omitempty"`
-	Remember bool   `json:"remember,omitempty"`
-}
-
-// LogoutReq 登出请求参数
-type LogoutReq struct {
-	RefreshToken string `json:"refresh_token,omitempty"`
-}
-
-// RefreshTokenReq 刷新令牌请求参数
-type RefreshTokenReq struct {
-	RefreshToken string `json:"refresh_token" validate:"required"`
-}
-
 // LoginHandler 密码登录处理器
 type LoginHandler struct {
-	repo *Repository
+	repo     *Repository
+	userRepo *user.Repository
 }
 
 // NewLoginHandler 创建密码登录处理器实例
-func NewLoginHandler(repo *Repository) *LoginHandler {
+func NewLoginHandler(repo *Repository, userRepo *user.Repository) *LoginHandler {
 	return &LoginHandler{
-		repo: repo,
+		repo:     repo,
+		userRepo: userRepo,
 	}
 }
 
@@ -47,6 +33,35 @@ type Claims struct {
 	UserID   string `json:"user_id"`
 	Username string `json:"username"`
 	jwt.RegisteredClaims
+}
+
+func (h *LoginHandler) Register(c echo.Context) error {
+	var req RegisterReq
+	if err := c.Bind(&req); err != nil {
+		return response.Error(c, http.StatusBadRequest, "请求参数错误")
+	}
+	// 检查用户邮箱是否已存在
+	var existingUser user.CoreUser
+	if err := h.userRepo.DB.Where("email = ?", req.Email).First(&existingUser).Error; err == nil {
+		return response.Error(c, http.StatusBadRequest, "邮箱已被注册")
+	}
+	// 检查用户手机号是否已存在
+	if err := h.userRepo.DB.Where("phone = ?", req.Phone).First(&existingUser).Error; err == nil {
+		return response.Error(c, http.StatusBadRequest, "手机号已被注册")
+	}
+	// 创建新用户
+	newUser := &user.CoreUser{
+		ID:       idutil.ShortUUIDv7(),
+		Username: req.Username,
+		Email:    req.Email,
+		Phone:    req.Phone,
+	}
+	err := h.userRepo.Create(c.Request().Context(), newUser)
+	if err != nil {
+		return response.Error(c, http.StatusInternalServerError, "注册用户失败")
+	}
+
+	return response.SuccessWithMsg(c, "注册成功", *newUser)
 }
 
 // Login 用户登录
@@ -65,7 +80,7 @@ func (h *LoginHandler) Login(c echo.Context) error {
 	// 示例：验证密码是否正确
 	if req.Username != "admin" || req.Password != "123456" {
 		// 记录登录失败日志
-		loginLog := &LoginLog{
+		loginLog := &CoreLoginLog{
 			ID:        uuid.New().String(),
 			UserID:    "", // 登录失败时没有用户ID
 			Username:  req.Username,
@@ -100,7 +115,7 @@ func (h *LoginHandler) Login(c echo.Context) error {
 	}
 
 	// 生成刷新令牌
-	refreshToken := &RefreshToken{
+	refreshToken := &CoreRefreshToken{
 		ID:        uuid.New().String(),
 		UserID:    userID,
 		Token:     uuid.New().String(),
@@ -112,7 +127,7 @@ func (h *LoginHandler) Login(c echo.Context) error {
 	}
 
 	// 记录登录成功日志
-	loginLog := &LoginLog{
+	loginLog := &CoreLoginLog{
 		ID:        uuid.New().String(),
 		UserID:    userID,
 		Username:  username,
@@ -194,7 +209,7 @@ func (h *LoginHandler) RefreshToken(c echo.Context) error {
 	}
 
 	// 生成新的刷新令牌
-	newRefreshToken := &RefreshToken{
+	newRefreshToken := &CoreRefreshToken{
 		ID:        uuid.New().String(),
 		UserID:    refreshToken.UserID,
 		Token:     uuid.New().String(),

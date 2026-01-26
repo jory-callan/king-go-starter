@@ -17,13 +17,13 @@ func NewRepository(db *gorm.DB) *Repository {
 }
 
 // CreateRefreshToken 创建刷新令牌
-func (r *Repository) CreateRefreshToken(ctx context.Context, token *RefreshToken) error {
+func (r *Repository) CreateRefreshToken(ctx context.Context, token *CoreRefreshToken) error {
 	return r.db.WithContext(ctx).Create(token).Error
 }
 
 // GetRefreshTokenByToken 根据令牌获取刷新令牌
-func (r *Repository) GetRefreshTokenByToken(ctx context.Context, token string) (*RefreshToken, error) {
-	var refreshToken RefreshToken
+func (r *Repository) GetRefreshTokenByToken(ctx context.Context, token string) (*CoreRefreshToken, error) {
+	var refreshToken CoreRefreshToken
 	err := r.db.WithContext(ctx).Where("token = ?", token).First(&refreshToken).Error
 	if err != nil {
 		return nil, err
@@ -33,10 +33,10 @@ func (r *Repository) GetRefreshTokenByToken(ctx context.Context, token string) (
 
 // DeleteRefreshToken 删除刷新令牌
 func (r *Repository) DeleteRefreshToken(ctx context.Context, token string) error {
-	return r.db.WithContext(ctx).Where("token = ?", token).Delete(&RefreshToken{}).Error
+	return r.db.WithContext(ctx).Where("token = ?", token).Delete(&CoreRefreshToken{}).Error
 }
 
 // CreateLoginLog 创建登录日志
-func (r *Repository) CreateLoginLog(ctx context.Context, log *LoginLog) error {
+func (r *Repository) CreateLoginLog(ctx context.Context, log *CoreLoginLog) error {
 	return r.db.WithContext(ctx).Create(log).Error
 }
