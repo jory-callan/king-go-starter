@@ -3,7 +3,6 @@ package user
 import (
 	"errors"
 	"fmt"
-	"king-starter/internal/app"
 	"king-starter/internal/response"
 	"net/http"
 
@@ -16,8 +15,8 @@ type Handler struct {
 	repo *Repository
 }
 
-func NewHandler(app *app.App) *Handler {
-	return &Handler{repo: NewRepository(app.Db.DB)}
+func NewHandler(repo *Repository) *Handler {
+	return &Handler{repo: repo}
 }
 
 // Create 创建用户

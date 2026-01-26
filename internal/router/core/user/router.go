@@ -13,7 +13,8 @@ func RegisterAutoMigrate(app *app.App) {
 }
 
 func RegisterRoutes(app *app.App) {
-	var handler = NewHandler(app)
+	var repo = NewRepository(app.Db.DB)
+	var handler = NewHandler(repo)
 
 	e := app.Server.Engine()
 	group := e.Group("/api/v1/core/users")
