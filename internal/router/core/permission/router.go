@@ -13,14 +13,14 @@ func RegisterAutoMigrate(app *app.App) {
 }
 
 // RegisterRoutes 模块的路由注册方法
-func RegisterRoutes(app *app.App) {
+func RegisterRoutes(app *app.App, prefix string) {
 	var permissionRepo = NewPermissionRepo(app.Db.DB)
 
 	var permHandler = NewPermissionHandler(permissionRepo)
 
 	e := app.Server.Engine()
 	// 权限路由（现在包括菜单功能）
-	permGroup := e.Group("/api/core/permissions")
+	permGroup := e.Group(prefix + "/core/permissions")
 	{
 		permGroup.POST("", permHandler.CreatePermission)
 		permGroup.GET("", permHandler.ListPermissions)
@@ -31,18 +31,18 @@ func RegisterRoutes(app *app.App) {
 	}
 
 	// 角色权限路由
-rolePermGroup := e.Group("/api/core/role-permissions")
-{
-	rolePermGroup.PUT("/roles/:role_id/permissions", permHandler.AssignRolePermissions)
-	rolePermGroup.GET("/roles/:role_id/permissions", permHandler.GetRolePermissions)
-	rolePermGroup.GET("/roles/:role_id/permissions/detail", permHandler.GetRolePermissionsWithDetails)
-	rolePermGroup.GET("/roles/:role_id/permissions/tree", permHandler.GetRolePermissionTree)
-	rolePermGroup.DELETE("/roles/:role_id/permissions", permHandler.RemoveRolePermissions)
-}
+	rolePermGroup := e.Group(prefix + "/core/role-permissions")
+	{
+		rolePermGroup.PUT("/roles/:role_id/permissions", permHandler.AssignRolePermissions)
+		rolePermGroup.GET("/roles/:role_id/permissions", permHandler.GetRolePermissions)
+		rolePermGroup.GET("/roles/:role_id/permissions/detail", permHandler.GetRolePermissionsWithDetails)
+		rolePermGroup.GET("/roles/:role_id/permissions/tree", permHandler.GetRolePermissionTree)
+		rolePermGroup.DELETE("/roles/:role_id/permissions", permHandler.RemoveRolePermissions)
+	}
 
-// 用户权限路由
-userPermGroup := e.Group("/api/core/user-permissions")
-{
-	userPermGroup.GET("/users/:user_id/permissions", permHandler.GetUserAllPermissions)
-}
+	// 用户权限路由
+	userPermGroup := e.Group(prefix + "/core/user-permissions")
+	{
+		userPermGroup.GET("/users/:user_id/permissions", permHandler.GetUserAllPermissions)
+	}
 }

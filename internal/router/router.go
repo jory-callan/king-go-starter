@@ -9,6 +9,8 @@ import (
 	"king-starter/internal/router/hello"
 )
 
+var prefix = "/api/v1/"
+
 // RegisterAutoMigrate 统一在这里自动迁移数据库表结构, 按需启用
 func RegisterAutoMigrate(app *app.App) {
 	user.RegisterAutoMigrate(app)
@@ -22,12 +24,12 @@ func RegisterAll(app *app.App) {
 	RegisterAutoMigrate(app)
 
 	// hello 测试模块
-	hello.RegisterRoutes(app)
+	hello.RegisterRoutes(app, prefix)
 
 	// core 模块
-	user.RegisterRoutes(app)
-	role.RegisterRoutes(app)
-	permission.RegisterRoutes(app)
+	user.RegisterRoutes(app, prefix)
+	role.RegisterRoutes(app, prefix)
+	permission.RegisterRoutes(app, prefix)
 	// 认证模块
 	// identity.RegisterRoutes(app)
 	auth.RegisterAuthRoutes(app)

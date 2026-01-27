@@ -12,12 +12,12 @@ func RegisterAutoMigrate(app *app.App) {
 	)
 }
 
-func RegisterRoutes(app *app.App) {
+func RegisterRoutes(app *app.App, prefix string) {
 	var repo = NewRepository(app.Db.DB)
 	var handler = NewHandler(repo)
 
 	e := app.Server.Engine()
-	group := e.Group("/api/v1/core/users")
+	group := e.Group(prefix + "/core/users")
 	{
 		group.POST("", handler.Create)
 		group.GET("", handler.List)

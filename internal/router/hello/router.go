@@ -11,9 +11,9 @@ import (
 )
 
 // RegisterRoutes 只是用于最简单的代码测试而已
-func RegisterRoutes(app *app.App) {
+func RegisterRoutes(app *app.App, prefix string) {
 	e := app.Server.Engine()
-	g := e.Group("/api/v1/hello")
+	g := e.Group(prefix + "/hello")
 	g.GET("/echo", func(c echo.Context) error {
 		logx.Info("hello world")
 		return c.String(http.StatusOK, "hello world")

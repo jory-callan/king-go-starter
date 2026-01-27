@@ -13,14 +13,14 @@ func RegisterAutoMigrate(app *app.App) {
 }
 
 // RegisterRoutes 提供 Access 模块的路由注册方法
-func RegisterRoutes(app *app.App) {
+func RegisterRoutes(app *app.App, prefix string) {
 	var roleRepo = NewRoleRepo(app.Db.DB)
 	var roleHandler = NewRoleHandler(roleRepo)
 
 	e := app.Server.Engine()
 
 	// 角色路由
-	roleGroup := e.Group("/api/core/roles")
+	roleGroup := e.Group(prefix + "/core/roles")
 	{
 		roleGroup.POST("", roleHandler.CreateRole)
 		roleGroup.GET("", roleHandler.ListRoles)
