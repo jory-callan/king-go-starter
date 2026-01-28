@@ -26,6 +26,9 @@ func (q *PageQuery) Normalize() {
 	if q.Size <= 0 {
 		q.Size = 10
 	}
+	if q.Size > 100 {
+		q.Size = 100
+	}
 	q.NeedCount = true
 	// 空 slice 表示“无排序”
 }

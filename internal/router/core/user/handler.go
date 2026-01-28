@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"king-starter/internal/response"
+	"king-starter/pkg/goutils/echoutil"
+	"king-starter/pkg/goutils/idutil"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -26,9 +28,6 @@ func (h *Handler) Create(c echo.Context) error {
 		return response.Error(c, http.StatusBadRequest, "请求参数错误")
 	}
 
-	// 模拟从 Context 中获取当前操作人 ID (后续中间件实现)
-	operatorID := "system-admin"
-
 	// 检查用户名是否存在
 	exist, _ := h.repo.GetByUsername(c.Request().Context(), req.Username)
 	if exist != nil {
@@ -41,7 +40,13 @@ func (h *Handler) Create(c echo.Context) error {
 		return response.Error(c, http.StatusInternalServerError, fmt.Sprintf("密码加密失败: %v", err))
 	}
 
+	id := idutil.ShortUUIDv7()
+	operatorID := echoutil.GetUserID(c)
+	if operatorID == "" {
+		operatorID = id
+	}
 	user := &CoreUser{
+		ID:        id,
 		Username:  req.Username,
 		Password:  string(hashedBytes),
 		Nickname:  req.Nickname,
@@ -87,7 +92,7 @@ func (h *Handler) List(c echo.Context) error {
 	pq.NeedCount = true
 
 	// 使用 BaseRepo 的分页方法
-	result, err := h.repo.PaginationWithScopes(c.Request().Context(), &pq)
+	result, err := h.repo.Pagination(c.Request().Context(), &pq, nil)
 	if err != nil {
 		return response.Error(c, http.StatusInternalServerError, "查询失败")
 	}
@@ -108,7 +113,10 @@ func (h *Handler) Update(c echo.Context) error {
 		return response.Error(c, http.StatusBadRequest, "请求参数错误")
 	}
 
-	operatorID := "system-admin" // TODO: 从中间件获取
+	operatorID := echoutil.GetUserID(c)
+	if operatorID == "" {
+		operatorID = id
+	}
 
 	// 检查是否存在
 	_, err := h.repo.GetByID(c.Request().Context(), id)
@@ -136,13 +144,12 @@ func (h *Handler) Update(c echo.Context) error {
 // Delete 删除用户
 func (h *Handler) Delete(c echo.Context) error {
 	id := c.Param("id")
-	operatorID := "system-admin" // TODO: 从中间件获取
+	operatorID := echoutil.GetUserID(c)
+	if operatorID == "" {
+		operatorID = id
+	}
 
-	// GORM 的软删除默认只更新 deleted_at，我们这里手动处理 deleted_by
-	if err := h.repo.GetDB(c.Request().Context()).Model(&CoreUser{}).Where("id = ?", id).Updates(map[string]interface{}{
-		"deleted_at": gorm.Expr("NOW()"), // 或者使用 time.Now()
-		"deleted_by": operatorID,
-	}).Error; err != nil {
+	if err := h.repo.Delete(c.Request().Context(), id, operatorID); err != nil {
 		return response.Error(c, http.StatusInternalServerError, err.Error())
 	}
 

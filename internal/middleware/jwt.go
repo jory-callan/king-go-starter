@@ -1,16 +1,10 @@
 package middleware
 
 import (
+	"king-starter/internal/common"
 	"king-starter/pkg/jwt"
 
 	"github.com/labstack/echo/v4"
-)
-
-type JWTContextKey string
-
-const (
-	UserIDKey   JWTContextKey = "user_id"
-	UsernameKey JWTContextKey = "username"
 )
 
 func JWT(jwt *jwt.JWT) echo.MiddlewareFunc {
@@ -34,8 +28,8 @@ func JWT(jwt *jwt.JWT) echo.MiddlewareFunc {
 				})
 			}
 
-			c.Set(string(UserIDKey), claims.UserID)
-			c.Set(string(UsernameKey), claims.Username)
+			c.Set(string(common.UserIDKey), claims.UserID)
+			c.Set(string(common.UsernameKey), claims.Username)
 
 			return next(c)
 		}

@@ -2,7 +2,8 @@ package permission
 
 import (
 	"context"
-	"king-starter/pkg/database/gormutil"
+
+	"king-starter/pkg/goutils/gormutil"
 
 	"gorm.io/gorm"
 )
@@ -94,12 +95,12 @@ func (r *PermissionRepo) GetUserAllPermissions(ctx context.Context, userID strin
 // RemoveRolePermissions 移除角色的部分或全部权限
 func (r *PermissionRepo) RemoveRolePermissions(ctx context.Context, roleID string, permissionIDs []string) error {
 	db := r.GetDB(ctx)
-	
+
 	if len(permissionIDs) == 0 {
 		// 如果没有指定权限ID，则移除该角色的所有权限
 		return db.Where("role_id = ?", roleID).Delete(&CoreRolePermission{}).Error
 	}
-	
+
 	// 否则只移除指定的权限
 	return db.Where("role_id = ? AND permission_id IN ?", roleID, permissionIDs).Delete(&CoreRolePermission{}).Error
 }
@@ -110,7 +111,7 @@ func (r *PermissionRepo) GetRolePermissionTree(ctx context.Context, roleID strin
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// 使用工具函数构建树形结构
 	return BuildPermissionTree(permissions), nil
 }

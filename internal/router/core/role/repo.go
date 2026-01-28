@@ -2,7 +2,8 @@ package role
 
 import (
 	"context"
-	"king-starter/pkg/database/gormutil"
+
+	"king-starter/pkg/goutils/gormutil"
 
 	"gorm.io/gorm"
 )
@@ -27,7 +28,7 @@ func (r *RoleRepo) AssignRolesToUser(ctx context.Context, userID string, roleIDs
 		if err := tx.Where("user_id = ?", userID).Delete(&CoreUserRole{}).Error; err != nil {
 			return err
 		}
-		
+
 		// 添加新角色
 		if len(roleIDs) > 0 {
 			var userRoles []CoreUserRole

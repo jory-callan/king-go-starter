@@ -9,7 +9,7 @@ import (
 	"king-starter/internal/router/hello"
 )
 
-var prefix = "/api/v1/"
+var prefix = "/api/v1"
 
 // RegisterAutoMigrate 统一在这里自动迁移数据库表结构, 按需启用
 func RegisterAutoMigrate(app *app.App) {

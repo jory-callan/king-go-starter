@@ -2,7 +2,8 @@ package user
 
 import (
 	"context"
-	"king-starter/pkg/database/gormutil"
+
+	"king-starter/pkg/goutils/gormutil"
 
 	"gorm.io/gorm"
 )

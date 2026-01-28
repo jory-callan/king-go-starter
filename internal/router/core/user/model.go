@@ -23,5 +23,5 @@ type CoreUser struct {
 }
 
 func (u *CoreUser) TableName() string {
-	return "core_users"
+	return "core_user"
 }
