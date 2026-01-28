@@ -2,6 +2,8 @@ package gormutil
 
 import (
 	"context"
+	"time"
+
 	"king-starter/internal/response"
 
 	"gorm.io/gorm"
@@ -27,8 +29,11 @@ func (r *BaseRepo[T]) Create(ctx context.Context, entity *T) error {
 // GetByID 根据主键查询单条
 func (r *BaseRepo[T]) GetByID(ctx context.Context, id string) (*T, error) {
 	var entity T
-	err := r.DB.WithContext(ctx).First(&entity, id).Error
-	return &entity, err
+	err := r.DB.WithContext(ctx).Where("id = ?", id).First(&entity).Error
+	if err != nil {
+		return nil, err
+	}
+	return &entity, nil
 }
 
 // Update 根据主键更新 (会保存所有字段，包括零值)
@@ -37,8 +42,14 @@ func (r *BaseRepo[T]) Update(ctx context.Context, entity *T) error {
 }
 
 // Delete 根据主键删除
-func (r *BaseRepo[T]) Delete(ctx context.Context, id string) error {
-	return r.DB.WithContext(ctx).Delete(new(T), id).Error
+// ctx: 上下文
+// id: 实体主键
+// operatorID: 删除操作人ID
+func (r *BaseRepo[T]) Delete(ctx context.Context, id string, operatorID string) error {
+	return r.DB.WithContext(ctx).Where("id = ?", id).Updates(map[string]interface{}{
+		"deleted_at": time.Now(), // 或者使用 gorm.Expr("Now()")
+		"deleted_by": operatorID,
+	}).Error
 }
 
 // CreateBatch 批量插入

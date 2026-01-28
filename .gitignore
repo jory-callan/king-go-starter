@@ -12,8 +12,10 @@
 *.out
 
 # IDE 和编辑器配置
-.vscode/
+# .vscode/
 !.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/launch.json
 .idea/
 *.swp
 *.swo
@@ -22,6 +24,7 @@
 
 # air 或其他热重载工具生成的临时文件
 tmp/
+.air.toml
 
 # 常见工具生成的文件
 dist/
